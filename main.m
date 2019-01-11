@@ -1,12 +1,10 @@
 clc;
 
-% Detect Moving Cars In Video
 % Create system objects to read file.
 videoSource = vision.VideoFileReader('salitona.mp4',...
     'VideoOutputDataType','uint8');
 
-% Setting frames to 5 because it is a short video. Set initial standard deviation.
-g = 10;
+g = 10;     % initial learning frames
 detector = vision.ForegroundDetector(...
        'NumTrainingFrames', g, ... 
        'InitialVariance', 30*30);
@@ -17,7 +15,6 @@ blob = vision.BlobAnalysis(...
        'BoundingBoxOutputPort', true, ...
        'MinimumBlobAreaSource', 'Property', 'MinimumBlobArea', 250);
 
-% Insert a border.
 shapeInserter = vision.ShapeInserter('BorderColor','White');
 
 %T = 10;
@@ -52,15 +49,15 @@ while ~isDone(videoSource)
     
     bbox   = step(blob, fgMask);
     out    = step(shapeInserter, frame, bbox);
-    %outBG = finalFrame;
+    
     step(videoPlayer, out);
     %step(videoPlayerSubtractor, finalFrame);
 
     t = t + 1;
-    pause(5);
+    pause(1);
 end
 
-% Release objects.
+
 release(videoPlayer);
 %release(videoPlayerSubtractor);
 release(videoSource);
