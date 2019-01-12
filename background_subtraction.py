@@ -14,11 +14,7 @@ while True:
         break
     
     mask = np.copy(frame)
-    mask[np.abs(frame - bg) > threshold] = 0
-    mask += 1
-    mask = np.product(mask, axis=2)
-    mask -= 1
-    mask[mask>0]=255
+    mask = np.all(np.abs(frame - bg) < threshold, axis=2)
     mask = mask.astype(np.uint8)
 
     frame = cv2.bitwise_and(frame,frame, mask=mask)
