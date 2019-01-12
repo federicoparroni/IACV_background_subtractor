@@ -12,14 +12,19 @@ while True:
     ret,frame = cap.read()
     if ret == False:
         break
-    
+
     mask = np.copy(frame, )
-    mask[np.abs(frame - bg) > 30] = 0
-    mask = np.product(mask, axis=2).astype(np.uint8)
+    mask[np.abs(frame - bg) > 10] = 0
+    mask = np.product(mask, axis=2)
     mask[mask>0]=255
+    mask = mask.astype(np.uint8)
+
     frame = cv2.bitwise_and(frame, frame, mask = mask)
 
     cv2.imshow('window-name',frame)
+    if cv2.waitKey(10) & 0xFF == ord('q'):
+        break
+
     time.sleep(0.02)
 
 cap.release()

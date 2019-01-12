@@ -27,4 +27,4 @@ def background_estimate(str, show=True):
 
     return bg*255
 
-# background_estimate('videos/svincolo.mp4', show=False)
+# background_estimate('videos/svincolo.mp4', show=True)
