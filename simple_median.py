@@ -2,7 +2,12 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 
-cap = cv2.VideoCapture('videos/salitone.mp4')
+import platform
+if platform.system() == 'Darwin':
+    import matplotlib
+    matplotlib.use('Qt4Agg')
+
+cap = cv2.VideoCapture('videos/salitona.mp4')
 V = []
 while True:
     ret,frame = cap.read()
