@@ -25,6 +25,6 @@ def background_estimate(str, show=True):
     if show: plt.imshow(cv2.cvtColor(bg, cv2.COLOR_BGR2RGB))
     if show: plt.show()
 
-    return bg
+    return bg*255
 
 # background_estimate('videos/svincolo.mp4', show=False)
