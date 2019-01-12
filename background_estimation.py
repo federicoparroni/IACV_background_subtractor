@@ -2,8 +2,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import cv2
 
-def background_estimate(str)
-    cap = cv2.VideoCapture('str')
+def background_estimate(str):
+    cap = cv2.VideoCapture(str)
     V = []
     while True:
         ret,frame = cap.read()
@@ -26,3 +26,5 @@ def background_estimate(str)
     plt.show()
 
     return bg
+
+background_estimate('videos/svincolo.mp4')
