@@ -1,4 +1,6 @@
 import cv2
+import numpy as np
+import time
 
 def read_frame():
     video = 'videos/svincolo.mp4'
@@ -8,6 +10,7 @@ def read_frame():
 
     while True:
         ret,frame = cap.read()
+        print(frame.shape)
         if ret == False:
             break
         
@@ -18,3 +21,5 @@ def read_frame():
 
     cap.release()
     cv2.destroyAllWindows()
+
+read_frame()
