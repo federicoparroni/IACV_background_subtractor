@@ -36,18 +36,18 @@ class PBAS():
         # of the N background values is less than R(x,y)
         for x in range(self.frame_shape[0]):
             for y in range(self.frame_shape[1]):
-                k = [0, 0, 0]
                 c = 0
-                while c < 3 or k[c] >= self.K:
+                while c < 3 or k >= self.K:
+                    k = 0       # number of lower-than-R distances for the channel 'c'
                     j = 0
-                    while j < min(self.N, self.current_frame_index) or k[c] >= self.K:
+                    while j < min(self.N, self.current_frame_index) or k >= self.K:
                         if self._distance(frame[x,y,c], self.B[j,x,y,c]) < self.R(x,y,c):
-                            k[c] += 1
+                            k += 1
                         j += 1
+                    # check if at least K distances are less than R(x,y)
+                    if k >= self.K:
+                        self.F[x,y] = 1
                     c += 1
-                # check if at least K distances are less than R(x,y)
-                if k[c] >= self.K:
-                    self.F[x,y] = 1
 
     def _bgupdate(self, frame):
         pass
