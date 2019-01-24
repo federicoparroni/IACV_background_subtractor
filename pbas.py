@@ -49,14 +49,26 @@ class PBAS():
     def process(self, frame):
         if self.frame_shape is None:
             self.frame_shape = frame.shape
+
+        #insert the N as first shape dimension.
+        shape = np.insert(self.frame_shape, 0, self.N)
+
         if self.B is None:
-            self.B = np.zeros(self.N, 3, frame.shape, np.uint8)
+            #shape structure B: [N, Y_pixel, X_pixel, 3]
+            self.B = np.zeros(shape=shape, dtype=np.uint8)
+
         if self.R is None:
-            self.R = np.zeros(frame.shape, np.float)
+            # shape structure R: [Y_pixel, X_pixel, 3]
+            self.R = np.zeros(self.frame_shape, np.float)
+
         if self.T is None:
-            self.T = np.zeros(frame.shape, np.float)
+            # shape structure T: [Y_pixel, X_pixel, 3]
+            self.T = np.zeros(self.frame_shape, np.float)
+
         if self.fg_mask is None:
-            self.fg_mask = np.zeros(frame.shape, np.uint8)
+            # shape structure fg_mask: [Y_pixel, X_pixel]
+            shape_fg_mask = np.delete(self.frame_shape,-1)
+            self.fg_mask = np.zeros(shape_fg_mask, np.uint8)
 
 
         self._fg_mask = self._segment(frame)

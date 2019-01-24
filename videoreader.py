@@ -10,6 +10,7 @@ def read_frame():
 
     while True:
         ret,frame = cap.read()
+        print(frame.shape)
         if ret == False:
             break
         
@@ -20,3 +21,5 @@ def read_frame():
 
     cap.release()
     cv2.destroyAllWindows()
+
+read_frame()
