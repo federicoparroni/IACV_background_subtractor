@@ -64,4 +64,4 @@ class PBAS():
         self._updateT(frame)
 
         self.current_frame_index += 1
-        return self.fg_mask
+        return self._fg_mask
