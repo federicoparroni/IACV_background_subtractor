@@ -22,19 +22,29 @@ class PBAS():
         self.B = None
         self.R = None
         self.T = None
-        self._fg_mask = None
+        self.F = None
 
+    # Build the segmentation mask F
     def _segment(self, frame):
         if K > self.current_frame_index:
             return self._fg_mask
-
+        
+        # a pixel (x,y) is foreground (so F(x,y)=1) if the distance between (x,y) and at least K
+        # of the N background values is less than R(x,y)
         for x in range(self.frame_shape[0]):
             for y in range(self.frame_shape[1]):
-                for c in range(3):
+                k = [0, 0, 0]
+                c = 0
+                while c < 3 or k[c] >= K:
                     j = 0
-                    k = 0
-                    while j < min(N, self.current_frame_index) or k >= K:
-                        if self._distance() < 
+                    while j < min(N, self.current_frame_index) or k[c] >= K:
+                        if self._distance(frame[x,y,c], self.B[j,x,y,c]) < R(x,y,c):
+                            k[c] += 1
+                        j += 1
+                    c += 1
+                # check if at least K distances are less than R(x,y)
+                if k[c] >= K:
+                    self.F(x,y) = 1
 
     def _bgupdate(self, frame):
         pass
@@ -55,13 +65,13 @@ class PBAS():
             self.R = np.zeros(frame.shape, np.float)
         if self.T is None:
             self.T = np.zeros(frame.shape, np.float)
-        if self.fg_mask is None:
-            self.fg_mask = np.zeros(frame.shape, np.uint8)
+        if self.F is None:
+            self.F = np.zeros(frame.shape, np.uint8)
 
-        self._fg_mask = self._segment(frame)
+        self.F = self._segment(frame)
         self._bgupdate(frame)
         self._updateR(frame)
         self._updateT(frame)
 
         self.current_frame_index += 1
-        return self._fg_mask
+        return self.F
