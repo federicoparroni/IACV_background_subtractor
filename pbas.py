@@ -19,6 +19,7 @@ class PBAS():
 
         self.current_frame_index = 0
         self.B = None
+        self.fg_mask = None
 
     def _segment(self, frame):
         pass
@@ -37,10 +38,10 @@ class PBAS():
         if self.B is None:
             self.B = np.zeros(frame.shape, np.uint8)
 
-        fg_mask = self._segment(frame)
+        self.fg_mask = self._segment(frame)
         self._bgupdate(frame)
         self._updateR(frame)
         self._updateT(frame)
 
         self.current_frame_index += 1
-        return fg_mask
+        return self.fg_mask
