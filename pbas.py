@@ -36,7 +36,7 @@ class PBAS():
 
     def process(self, frame):
         if self.B is None:
-            self.B = np.zeros(frame.shape, np.uint8)
+            self.B = np.zeros(self.N, 3, frame.shape, np.uint8)
 
         self.fg_mask = self._segment(frame)
         self._bgupdate(frame)

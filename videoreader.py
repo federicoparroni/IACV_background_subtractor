@@ -1,4 +1,6 @@
 import cv2
+import numpy as np
+import time
 
 def read_frame():
     video = 'videos/svincolo.mp4'
