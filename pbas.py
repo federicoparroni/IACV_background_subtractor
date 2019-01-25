@@ -20,6 +20,7 @@ class PBAS():
         self.frame_shape = None
         self.current_frame_index = 0
         self.B = None
+        self.D = None
         self.R = None
         self.T = None
         self.F = None
@@ -52,23 +53,31 @@ class PBAS():
     def _bgupdate(self, frame):
         pass
 
-    def _updateR(self, frame):
-        pass
+    def _updateR(self, frame, n, x, y):
+        self.D[n, x, y] = min([_distance(I[n, x, y],B[n, x, y]) for n in range(50)])
+        self.d_minavg[x,y] = np.mean(D[:,x,y])
+        if R[x,y] > d_minavg[x,y]*self.R_scale:
+            R[x,y] = R[x,y]*(1-self.R_incdec)
+        else:
+            R[x,y] = R[x,y]*(1+self.R_incdec)
 
     def _updateT(self, frame):
         pass
-
 
     def process(self, frame):
         if self.frame_shape is None:
             self.frame_shape = frame.shape
 
-        #insert the N as first shape dimension.
+        # insert the N as first shape dimension.
         shape = np.insert(self.frame_shape, 0, self.N)
 
         if self.B is None:
-            #shape structure B: [N, Y_pixel, X_pixel, 3]
+            # shape structure B: [N, Y_pixel, X_pixel, 3]
             self.B = np.zeros(shape=shape, dtype=np.uint8)
+
+        if self.D is None:
+            # shape structure B: [N, Y_pixel, X_pixel, 3]
+            self.D = np.ones(shape=shape)*np.inf
 
         if self.R is None:
             # shape structure R: [Y_pixel, X_pixel, 3]
