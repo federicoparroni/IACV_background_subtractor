@@ -93,6 +93,9 @@ class PBAS():
             # shape structure R: [Y_pixel, X_pixel, 3]
             self.R = np.zeros(self.frame_shape, np.float)
 
+        if self.d_minavg is None:
+            self.R = np.zeros(self.frame_shape, np.float)
+
         if self.T is None:
             # shape structure T: [Y_pixel, X_pixel, 3]
             self.T = np.zeros(self.frame_shape, np.float)
