@@ -6,7 +6,7 @@ class PBAS():
     # N:
     # K:
     # ...
-    def __init__(self, N, K, R_incdec, R_lower, R_scale, T_dec, T_inc, T_lower, T_upper):
+    def __init__(self, N, K=2, R_incdec=0.05, R_lower=18, R_scale=5, T_dec=0.05, T_inc=1, T_lower=2, T_upper=200):
         self.N = N
         self.K = K
         self.R_incdec = R_incdec
