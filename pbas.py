@@ -23,31 +23,32 @@ class PBAS():
         self.R = None
         self.T = None
         self.F = None
+        self.d_minavg = None
 
     def _distance(self, a, b):
         return abs(a-b)
 
     # Build the segmentation mask F
     def _segment(self, frame):
-        if self.K > self.current_frame_index:
-            return self.F
-        
-        # a pixel (x,y) is foreground (so F(x,y)=1) if the distance between (x,y) and at least K
-        # of the N background values is less than R(x,y)
+        # a pixel (x,y) is foreground (so F[x,y]=1) if the distance between (x,y) and at least K
+        # of the N background values is less than R[x,y]
         for x in range(self.frame_shape[0]):
             for y in range(self.frame_shape[1]):
-                c = 0
-                while c < 3 or k >= self.K:
-                    k = 0       # number of lower-than-R distances for the channel 'c'
-                    j = 0
-                    while j < min(self.N, self.current_frame_index) or k >= self.K:
-                        if self._distance(frame[x,y,c], self.B[j,x,y,c]) < self.R(x,y,c):
-                            k += 1
-                        j += 1
-                    # check if at least K distances are less than R(x,y)
-                    if k >= self.K:
-                        self.F[x,y] = 1
-                    c += 1
+                #c = 0
+                #while c < 3 or k >= self.K:
+                k = 0       # number of lower-than-R distances for the channel 'c'
+                j = 0
+                while j < self.N or k >= self.K:
+                    if self._distance(frame[x,y], self.B[j,x,y]) < self.R[x,y]:
+                        k += 1
+                    j += 1
+                # check if at least K distances are less than R(x,y)
+                if k >= self.K:
+                    self.F[x,y] = 1
+                else:
+                    self.F[x,y] = 0
+                    self._bgupdate(frame, x,y)
+                #c += 1
 
     def _bgupdate(self, frame):
         pass
@@ -56,7 +57,16 @@ class PBAS():
         pass
 
     def _updateT(self, frame):
-        pass
+        for x in range(self.frame_shape[0]):
+            for y in range(self.frame_shape[1]):
+                #for c in range(3):
+                Tinc_over_dmin = self.T_inc / self.d_minavg[x,y]
+                if self.F[x,y] == 1:
+                    self.T[x,y] += Tinc_over_dmin
+                else:
+                    self.T[x,y] -= Tinc_over_dmin
+                self.T[x,y] = max(self.T_lower, self.T[x,y])
+                self.T[x,y] = min(self.T[x,y], self.T_upper)
 
 
     def process(self, frame):
