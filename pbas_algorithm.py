@@ -1,13 +1,14 @@
 import numpy as np
-import cv2
 import random
+import time
+from tqdm import tqdm
 
-class PBAS():
+class PBAS_algorithm:
 
     # N:
     # K:
     # ...
-    def __init__(self, N, K=2, R_incdec=0.05, R_lower=18, R_scale=5, T_dec=0.05, T_inc=1, T_lower=2, T_upper=200):
+    def __init__(self, N=30, K=2, R_incdec=0.05, R_lower=18, R_scale=5, T_dec=0.05, T_inc=1, T_lower=2, T_upper=200):
         self.N = N
         self.K = K
         self.R_incdec = R_incdec
@@ -32,14 +33,20 @@ class PBAS():
 
     # Build the segmentation mask F
     def _segment(self, frame):
+        start = time.time()
         B_copy = self.B.copy()
         R_copy = self.R.copy()
 
+        print('copied matrices')
+        print(time.time()-start)
 
         # a pixel (x,y) is foreground (so F[x,y]=1) if the distance between (x,y) and at least K
         # of the N background values is less than R[x,y]
         for x in range(self.frame_shape[0]):
             for y in range(self.frame_shape[1]):
+
+                start = time.time()
+
                 #c = 0
                 #while c < 3 or k >= self.K:
                 k = 0       # number of lower-than-R distances for the channel 'c'
@@ -55,12 +62,16 @@ class PBAS():
                     self.F[x, y] = 0
                     self._bgupdate(frame, x, y)
 
+                #print('time 1 for cycle')
+                #print(time.time()-start)
 
     def _bgupdate(self, frame, x, y):
+
+
         #calculate if an update is performed p = 1/t
         if random.uniform(0, 1) > self.T[x, y]:
             #choose one of the N frames to update
-            n = random.randint(0, 30)
+            n = random.randint(0, 29)
             #update the pixel of the choosen B with the one of the actual frame
             self.B[n, x, y] = frame[x, y]
             #TODO: WE HAVE CHOOSEN TO UPDATE ALSO A NEIGHBOUR PIXEL EVERY TIME WE UPDATE THE FIRST ONE
@@ -69,17 +80,18 @@ class PBAS():
 
             y_disp = 0
             x_disp = 0
-            while (x_disp == 0 and y_disp == 0) or x+x_disp > self.frame_shape(0) or y+y_disp > self.frame_shape(1):
-                y_disp = d[random.randint(0, 3)]
-                x_disp = d[random.randint(0, 3)]
+            while (x_disp == 0 and y_disp == 0) or x+x_disp >= self.frame_shape[0] or y+y_disp >= self.frame_shape[1]:
+                y_disp = d[random.randint(0, 2)]
+                x_disp = d[random.randint(0, 2)]
             self.B[n, x+x_disp, y+y_disp] = frame[x+x_disp, y+y_disp]
 
             #call the updateR
-            self._updateR(n, x, y)
-            self._updateR(n, x+x_disp, y+y_disp)
+            self._updateR(frame, n, x, y)
+            self._updateR(frame, n, x+x_disp, y+y_disp)
 
-    def _updateR(self, n, x, y):
-        self.D[n, x, y] = min([self._distance(self.I[n, x, y], self.B[n, x, y]) for n in range(50)])
+
+    def _updateR(self, frame, n, x, y):
+        self.D[n, x, y] = min([self._distance(frame[x, y], self.B[n, x, y]) for n in range(self.N)])
         self.d_minavg[x, y] = np.mean(self.D[:, x, y])
         if self.R[x, y] > self.d_minavg[x, y]*self.R_scale:
             self.R[x, y] = self.R[x, y]*(1-self.R_incdec)
@@ -99,6 +111,7 @@ class PBAS():
                 self.T[x, y] = min(self.T[x, y], self.T_upper)
 
     def process(self, frame):
+
         if self.frame_shape is None:
             self.frame_shape = frame.shape
 
@@ -106,33 +119,37 @@ class PBAS():
         shape = np.insert(self.frame_shape, 0, self.N)
 
         if self.B is None:
-            #shape structure B: [N, Y_pixel, X_pixel, 1]
+            #shape structure B: [N, X_pixel, Y_pixel, 1]
             self.B = np.zeros(shape=shape, dtype=np.uint8)
 
         if self.D is None:
-            # shape structure B: [N, Y_pixel, X_pixel, 3]
+            # shape structure B: [N, X_pixel, Y_pixel, 3]
             self.D = np.ones(shape=shape)*np.inf
 
         if self.R is None:
-            # shape structure R: [Y_pixel, X_pixel, 1]
+            # shape structure R: [X_pixel, Y_pixel, 1]
             self.R = np.zeros(self.frame_shape, np.float)
 
         if self.d_minavg is None:
-            self.R = np.zeros(self.frame_shape, np.float)
+            self.d_minavg = np.zeros(self.frame_shape, np.float)
 
         if self.T is None:
-            # shape structure T: [Y_pixel, X_pixel, 1]
+            # shape structure T: [X_pixel, Y_pixel, 1]
             self.T = np.zeros(self.frame_shape, np.float)
 
         if self.F is None:
-            # shape structure fg_mask: [Y_pixel, X_pixel]
-            shape_fg_mask = np.delete(self.frame_shape, -1)
+            # shape structure fg_mask: [X_pixel, Y_pixel]
+            shape_fg_mask = [self.frame_shape[0], self.frame_shape[1]]
             self.F = np.zeros(shape_fg_mask, np.uint8)
 
         self._segment(frame)
+        start = time.time()
         self._updateT()
+        print(time.time()-start)
 
         self.current_frame_index += 1
         return self.F
+
+
 
 
