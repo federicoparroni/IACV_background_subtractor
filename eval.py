@@ -5,12 +5,14 @@ import time
 from MOG import MOG
 from tqdm import tqdm
 
-def demo(bp, algo):
+def demo(bp, algo, grey=False):
     images = sorted(os.listdir(bp + 'input/'))
     print('demo on ' + bp)
     for i in tqdm(range(len(images))):
         j = images[i]
         image = cv.imread(bp + 'input/' + j)
+        if grey:
+            image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
         mask = algo.process(image)
         mask = np.logical_not(mask).astype(np.uint8)
         image = cv.bitwise_and(image, image, mask=mask)
@@ -19,7 +21,7 @@ def demo(bp, algo):
         if k == 27:
             break
 
-def evaluate(l, algo):
+def evaluate(l, algo, grey=False):
     for bp in l:
         images = sorted(os.listdir(bp + 'input/'))
         gts = sorted(os.listdir(bp + 'groundtruth/'))
@@ -30,6 +32,8 @@ def evaluate(l, algo):
         for i in tqdm(range(len(images))):
             j = images[i]
             image = cv.imread(bp + 'input/' + j)
+            if grey:
+                image = cv.cvtColor(image, cv.COLOR_BGR2GRAY)
             mask = algo.process(image)
 
             if i+1 >= temporal_ROI[0] and i+1 <= temporal_ROI[1]:
@@ -54,6 +58,5 @@ def evaluate(l, algo):
         pwc = 100*(fn+fp)/(tp+fn+fp+tn)
         print('results: tp = {}, tn = {}, fp = {}, fn = {}. (avg) recall = {}, specificity = {}, false positive rate = {}, false negative rate = {}, percentage of wrong classification = {}, precision = {}, f1 score = {}'.format(tp, tn, fp, fn, re, sp, fpr, fnr, pwc, pr, f1))
 
-m = MOG()
-demo('dataset/dataset/baseline/highway/', m)
+demo('dataset/dataset/baseline/highway/', MOG(), grey=True)
 # evaluate(['dataset/dataset/baseline/highway/'], m)
