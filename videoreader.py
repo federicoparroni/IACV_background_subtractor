@@ -3,7 +3,7 @@ import time
 from pbas_algorithm import PBAS_algorithm
 
 def read_frame():
-    video = 'videos/svincolo.mp4'
+    video = 'videos/salitona.mp4'
     cap = cv2.VideoCapture(video)
     p = PBAS_algorithm()
 
@@ -13,13 +13,14 @@ def read_frame():
         ret, frame = cap.read()
         frame_grayscale = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
 
-        p.process(frame_grayscale)
+        mask = p.process(frame_grayscale)
         if ret == False:
             break
 
         print(time.time()-start)
 
         cv2.imshow('window-name', frame_grayscale)
+        cv2.imshow('window-name', mask)
         if cv2.waitKey(10) & 0xFF == ord('q'):
             break
         time.sleep(0.02)
