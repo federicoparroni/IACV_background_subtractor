@@ -3,3 +3,6 @@
 dataset/
 
 \.idea/
+*.c
+*.html
+*.so

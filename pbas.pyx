@@ -15,6 +15,16 @@ cdef class PBAS:
     cdef public int T_lower
     cdef public int T_upper
 
+    cdef Py_ssize_t frame_shape_x, frame_shape_y
+    cdef int current_frame_index
+
+    cdef B
+    cdef R
+    cdef D
+    cdef T
+    cdef F
+    cdef d_minavg
+
     # N:
     # K:
     # ...
@@ -29,14 +39,15 @@ cdef class PBAS:
         self.T_lower = T_lower
         self.T_upper = T_upper
 
-        self.frame_shape = None
+        self.frame_shape_x = -1
+        self.frame_shape_y = -1
         self.current_frame_index = 1
         self.B = None
         self.D = None
-        self.R = None
+        self.R = None 
         self.T = None
-        self.F = None
-        self.d_minavg = None
+        self.F = None 
+        self.d_minavg = None 
 
     cpdef float _distance(self, int a, int b):
         return abs(a-b)
@@ -46,13 +57,12 @@ cdef class PBAS:
         B_copy = self.B.copy()
         R_copy = self.R.copy()
 
-
         # a pixel (x,y) is foreground (so F[x,y]=1) if the distance between (x,y) and at least K
         # of the N background values is less than R[x,y]
-        cdef int x, y
+        cdef Py_ssize_t x, y
         cdef int k, j
-        for x in range(self.frame_shape[0]):
-            for y in range(self.frame_shape[1]):
+        for x in range(self.frame_shape_x):
+            for y in range(self.frame_shape_y):
                 s = time.time()
                 #c = 0
                 #while c < 3 or k >= self.K:
@@ -86,7 +96,7 @@ cdef class PBAS:
 
             x_disp = 0
             y_disp = 0
-            while (x_disp == 0 and y_disp == 0) or x+x_disp > self.frame_shape(0) or y+y_disp > self.frame_shape(1):
+            while (x_disp == 0 and y_disp == 0) or x+x_disp > self.frame_shape_x or y+y_disp > self.frame_shape_y:
                 y_disp = d[random.randint(0, 3)]
                 x_disp = d[random.randint(0, 3)]
             self.B[n, x+x_disp, y+y_disp] = frame[x+x_disp, y+y_disp]
@@ -96,7 +106,7 @@ cdef class PBAS:
             self._updateR(n, x+x_disp, y+y_disp)
 
     cpdef void _updateR(self, n, int x, int y):
-        self.D[n, x, y] = min([self._distance(self.I[n, x, y], self.B[n, x, y]) for n in range(50)])
+        self.D[n, x, y] = min([self._distance(self.I[n, x, y], self.B[n, x, y]) for n in range(self.N)])
         self.d_minavg[x, y] = np.mean(self.D[:, x, y])
         if self.R[x, y] > self.d_minavg[x, y]*self.R_scale:
             self.R[x, y] = self.R[x, y]*(1-self.R_incdec)
@@ -106,8 +116,8 @@ cdef class PBAS:
     cpdef void _updateT(self):
         cdef int x, y
         cdef float Tinc_over_dmin
-        for x in range(self.frame_shape[0]):
-            for y in range(self.frame_shape[1]):
+        for x in range(self.frame_shape_x):
+            for y in range(self.frame_shape_y):
                 #for c in range(3):
                 Tinc_over_dmin = self.T_inc / self.d_minavg[x, y]
                 if self.F[x, y] == 1:
@@ -118,35 +128,31 @@ cdef class PBAS:
                 self.T[x, y] = min(self.T[x, y], self.T_upper)
 
     cpdef process(self, frame):
-        if self.frame_shape is None:
-            self.frame_shape = frame.shape
-
-        # insert the N as first shape dimension.
-        shape = np.insert(self.frame_shape, 0, self.N)
+        self.frame_shape_x = frame.shape[0]
+        self.frame_shape_y = frame.shape[1]
 
         if self.B is None:
             #shape structure B: [N, Y_pixel, X_pixel, 1]
-            self.B = np.zeros(shape=shape, dtype=np.uint8)
+            self.B = np.zeros(shape=(self.N,self.frame_shape_x,self.frame_shape_y), dtype=np.uint8)
 
         if self.D is None:
             # shape structure B: [N, Y_pixel, X_pixel, 3]
-            self.D = np.ones(shape=shape)*np.inf
+            self.D = np.ones(shape=(self.N,self.frame_shape_x,self.frame_shape_y))*np.inf
 
         if self.R is None:
             # shape structure R: [Y_pixel, X_pixel, 1]
-            self.R = np.zeros(self.frame_shape, np.float)
+            self.R = np.zeros((self.frame_shape_x,self.frame_shape_y), np.float)
 
         if self.d_minavg is None:
-            self.R = np.zeros(self.frame_shape, np.float)
+            self.R = np.zeros((self.frame_shape_x,self.frame_shape_y), np.float)
 
         if self.T is None:
             # shape structure T: [Y_pixel, X_pixel, 1]
-            self.T = np.zeros(self.frame_shape, np.float)
+            self.T = np.zeros((self.frame_shape_x,self.frame_shape_y), np.float)
 
         if self.F is None:
             # shape structure fg_mask: [Y_pixel, X_pixel]
-            shape_fg_mask = np.delete(self.frame_shape, -1)
-            self.F = np.zeros(shape_fg_mask, np.uint8)
+            self.F = np.zeros((self.frame_shape_x,self.frame_shape_y), np.uint8)
 
         self._segment(frame)
         self._updateT()
