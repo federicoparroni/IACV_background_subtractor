@@ -33,26 +33,23 @@ class PBAS_algorithm:
 
     # Build the segmentation mask F
     def _segment(self, frame):
-        start = time.time()
+
         B_copy = self.B.copy()
         R_copy = self.R.copy()
-
-        print('copied matrices')
-        print(time.time()-start)
 
         # a pixel (x,y) is foreground (so F[x,y]=1) if the distance between (x,y) and at least K
         # of the N background values is less than R[x,y]
         for x in range(self.frame_shape[0]):
             for y in range(self.frame_shape[1]):
 
-                start = time.time()
-
                 #c = 0
                 #while c < 3 or k >= self.K:
                 k = 0       # number of lower-than-R distances for the channel 'c'
                 j = 0
+                frame_pixel = frame[x,y]
+                r = R_copy[x,y]
                 while j < self.N or k >= self.K:
-                    if self._distance(frame[x,y], B_copy[j,x,y]) < R_copy[x,y]:
+                    if self._distance(frame_pixel, B_copy[j,x,y]) < r:
                         k += 1
                     j += 1
                 # check if at least K distances are less than R(x,y)
@@ -62,12 +59,8 @@ class PBAS_algorithm:
                     self.F[x, y] = 0
                     self._bgupdate(frame, x, y)
 
-                #print('time 1 for cycle')
-                #print(time.time()-start)
 
     def _bgupdate(self, frame, x, y):
-
-
         #calculate if an update is performed p = 1/t
         if random.uniform(0, 1) > self.T[x, y]:
             #choose one of the N frames to update
@@ -76,18 +69,24 @@ class PBAS_algorithm:
             self.B[n, x, y] = frame[x, y]
             #TODO: WE HAVE CHOOSEN TO UPDATE ALSO A NEIGHBOUR PIXEL EVERY TIME WE UPDATE THE FIRST ONE
 
-            d = [-1, 1, 0]
+            d = [(-1, -1), (-1, 1), (-1, 0), (1, -1), (1, 1), (1, 0), (0, 1), (0, -1)]
 
             y_disp = 0
             x_disp = 0
+
             while (x_disp == 0 and y_disp == 0) or x+x_disp >= self.frame_shape[0] or y+y_disp >= self.frame_shape[1]:
-                y_disp = d[random.randint(0, 2)]
-                x_disp = d[random.randint(0, 2)]
+                x_disp = d[random.randint(0, 7)][0]
+                y_disp = d[random.randint(0, 7)][1]
+
             self.B[n, x+x_disp, y+y_disp] = frame[x+x_disp, y+y_disp]
+
+
+
 
             #call the updateR
             self._updateR(frame, n, x, y)
             self._updateR(frame, n, x+x_disp, y+y_disp)
+
 
 
     def _updateR(self, frame, n, x, y):
@@ -142,10 +141,11 @@ class PBAS_algorithm:
             shape_fg_mask = [self.frame_shape[0], self.frame_shape[1]]
             self.F = np.zeros(shape_fg_mask, np.uint8)
 
+        #start = time.time()
         self._segment(frame)
-        start = time.time()
+        #print(time.time() - start)
         self._updateT()
-        print(time.time()-start)
+
 
         self.current_frame_index += 1
         return self.F
