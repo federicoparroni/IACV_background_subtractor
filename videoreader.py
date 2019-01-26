@@ -1,11 +1,11 @@
 import cv2
 import time
-from pbas_algorithm import PBAS_algorithm
+from pbas import PBAS
 
 def read_frame():
     video = 'videos/salitona.mp4'
     cap = cv2.VideoCapture(video)
-    p = PBAS_algorithm()
+    p = PBAS(N=30)
 
     while True:
         start = time.time()
