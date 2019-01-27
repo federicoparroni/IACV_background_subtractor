@@ -1,6 +1,9 @@
 #include <iostream>
 #include <math.h>
 #include "pbas.h"
+#include <stdlib.h>
+#include <time.h>
+#include <utility>       
 
 using namespace std;
 
@@ -59,6 +62,52 @@ void PBAS::updateF(uint8_t *frameData, int x, int y, int stride) {
     }
 }
 
+void PBAS::updateB(Mat* frame, int x, int y){
+    int rand_numb, n, y_disp, x_disp;
+    pair<int, int> disp;
+    double update_p;
+    vector<pair<int, int> > displacement_vec;
+    
+    displacement_vec.push_back(make_pair(-1, -1));
+    displacement_vec.push_back(make_pair(-1, 1));
+    displacement_vec.push_back(make_pair(-1, 0));
+    displacement_vec.push_back(make_pair(1, -1));
+    displacement_vec.push_back(make_pair(1, 1));
+    displacement_vec.push_back(make_pair(1, 0));
+    displacement_vec.push_back(make_pair(0, 1));
+    displacement_vec.push_back(make_pair(0, -1));
+
+    //initialize random seed
+    srand (time(NULL));
+    // generate a number between 0 and 99
+    rand_numb = rand() %100;
+    // get the T[x,y]
+    update_p = T.at<double>(x,y)*100;
+
+    if(rand_numb > update_p){
+        //generate a random number between 0 and N-1
+        n = rand() % N;
+        B[n].at<double>(x, y) = frame->at<double>(x, y);
+
+        y_disp = 0;
+        x_disp = 0;
+
+        while((x_disp == 0 && y_disp == 0)||x+x_disp>=h||y+y_disp>=w){
+            rand_numb = rand() %8;
+            disp = displacement_vec[rand_numb];
+            x_disp = disp.first;
+            y_disp = disp.second;
+        }
+
+        B[n].at<double>(x+x_disp, y+y_disp) = frame->at<double>(x+x_disp, y+y_disp);
+        
+        updateR(frame, x, y, n);
+        updateR(frame, x+x_disp, y+y_disp, n);
+
+    }
+
+}
+
 void PBAS::updateR(Mat* frame, int x, int y, int n){
     cout << "im in" << endl;
 }
@@ -70,7 +119,7 @@ Mat* PBAS::process(Mat* frame) {
     // data stores pixel values and can be used for fast access by pointer
     uint8_t *frameData = frame->data;
 
-    // B, D, d_minavg initialization
+    // B, D, d_minavg T initialization
     if (B.size() == 0) {
         for(int i=0; i<N; i++) {
             Mat b_elem(h, w, CV_32FC1);
@@ -82,6 +131,7 @@ Mat* PBAS::process(Mat* frame) {
 
         }
         d_minavg = Mat::zeros(h, w, CV_32FC1);
+        T = Mat::zeros(h, w, CV_32FC1);
     }
 
     for(int x = 0; x < h; x++)

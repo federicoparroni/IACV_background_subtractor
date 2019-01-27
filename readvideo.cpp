@@ -27,9 +27,6 @@ int main(int argc, char const *argv[]) {
         char c=(char)waitKey(25);
         if(c==27)
             break;
-        
-        
-
     }
     cap.release();
     destroyAllWindows(); 
