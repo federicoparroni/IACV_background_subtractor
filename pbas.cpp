@@ -15,11 +15,12 @@ PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, f
 
 PBAS::~PBAS() {}
 
-uint8_t getPixel(uint8_t *data, int x, int y, int stride) {
+uint8_t PBAS::getPixel(uint8_t *data, int x, int y, int stride) {
     return data[x * stride + y];
 }
-uint8_t* getPixelPtr(uint8_t *data, int x, int y, int stride) {
-    return data + x * stride + y;
+uint8_t* PBAS::getPixelPtr(uint8_t *data, int x, int y, int stride) {
+    return &data[x * stride + y];
+    //return data + (x * stride + y) * sizeof(uchar);
 }
 
 
@@ -33,8 +34,6 @@ void PBAS::updateF(uint8_t *frameData, int x, int y, int stride) {
     
     uint8_t *Fdata = F.data;
     int Fstep = F.step;
-    uint8_t *Bdata = B.data;
-    int Bstep = B[0].step;
     uint8_t *Rdata = R.data;
     int Rstep = R.step;
 
@@ -43,6 +42,8 @@ void PBAS::updateF(uint8_t *frameData, int x, int y, int stride) {
     int k = 0;       // number of lower-than-R distances for the channel 'c'
     int j = 0;
     while(j < N || k >= K) {
+        uint8_t *Bdata = B[j].data;
+        int Bstep = B[j].step;
         //if(distance(frame[x,y], B_copy[j,x,y]) < R_copy[x,y]) {
         if(distance(getPixel(frameData,x,y,stride), getPixel(B[j].data,x,y,Bstep)) < getPixel(Rdata,x,y,Rstep)) {
             k++;
@@ -51,10 +52,10 @@ void PBAS::updateF(uint8_t *frameData, int x, int y, int stride) {
     }
     // check if at least K distances are less than R(x,y)
     if(k >= K) {
-        getPixelPtr(Fdata, x,y,Fstep) = 1;
+        *getPixelPtr(Fdata, x,y,Fstep) = 1;
     } else {
-        getPixel(Fdata, x,y,Fstep) = 0;
-        updateBg(frame, x, y);
+        *getPixelPtr(Fdata, x,y,Fstep) = 0;
+        //updateB(frameData, x, y);
     }
 }
 
@@ -69,16 +70,9 @@ Mat* PBAS::process(Mat* frame) {
         for(int y = 0; y < w; y++)
         {
             updateF(frameData, x,y,stride);
-            updateR(frame, x,y);
-            updateT(frame, x,y);
+            //updateR(frame, x,y);
+            //updateT(frame, x,y);
         }
     
     return &F;
-}
-
-
-int main() {
-    PBAS *p = new PBAS();
-    
-    return 0;
 }
