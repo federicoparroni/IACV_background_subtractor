@@ -73,10 +73,10 @@ void PBAS::updateF(Mat* frame, int x, int y, int stride) {
     // check if at least K distances are less than R(x,y)
     if(k >= K) {
         //*getPixelPtr(Fdata, x,y,Fstep) = 1;
-        F.at<uint8_t>(Point(x,y)) = 1;
+        F.at<uint8_t>(x,y) = 1;
     } else {
         //*getPixelPtr(Fdata, x,y,Fstep) = 0;
-        F.at<uint8_t>(Point(x,y)) = 0;
+        F.at<uint8_t>(x,y) = 0;
         updateB(frame, x, y);
     }
 }
@@ -150,8 +150,8 @@ void PBAS::updateB(Mat* frame, int x, int y){
 
         B[n].at<double>(x+x_disp, y+y_disp) = frame->at<double>(x+x_disp, y+y_disp);
         
-        updateR(frame, x, y, n);
-        updateR(frame, x+x_disp, y+y_disp, n);
+        //updateR(frame, x, y, n);
+        //updateR(frame, x+x_disp, y+y_disp, n);
 
     }
 }
@@ -164,7 +164,7 @@ Mat* PBAS::process(Mat* frame) {
     uint8_t *frameData = frame->data;
 
     // B, D, d_minavg initialization
-    if (!B.size()) {
+    if (B.size() == 0) {
         for(int i=0; i<N; i++) {
             Mat b_elem(h, w, CV_8UC1);
             randu(b_elem, 0, 255);

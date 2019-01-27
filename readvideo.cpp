@@ -24,7 +24,7 @@ int main(int argc, char const *argv[]) {
 
         cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
         mask = pbas->process(&gray);
-        imshow("Frame", frame);
+        imshow("Frame", *mask);
         char c=(char)waitKey(25);
         if(c==27) break;
     }
