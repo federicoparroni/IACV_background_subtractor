@@ -9,11 +9,27 @@ using namespace std;
 
 
 PBAS::PBAS() {
-    cout << "Ciao!" << endl;
+    N = 30;
+    K = 2;
+    R_incdec = 0.05;
+    R_lower = 18;
+    R_scale = 5;
+    T_dec = 0.05;
+    T_inc = 1;
+    T_lower = 2;
+    T_upper = 200;
 }
 PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, float T_dec=0.05, int T_inc=1, int T_lower=2, int T_upper=200)
 {
-    cout << "Ciao!" << endl;
+    this->N = N;
+    this->K = K;
+    this->R_incdec = R_incdec;
+    this->R_lower = R_lower;
+    this->R_scale = R_scale;
+    this->T_dec = T_dec;
+    this->T_inc = T_inc;
+    this->T_lower = T_lower;
+    this->T_upper = T_upper;
 }
 
 PBAS::~PBAS() {}
@@ -31,9 +47,10 @@ float PBAS::distance(int a, int b) {
     return abs(a-b);
 }
 
-void PBAS::updateF(uint8_t *frameData, int x, int y, int stride) {
+void PBAS::updateF(Mat* frame, int x, int y, int stride) {
     Mat* B_copy;
     Mat* R_copy;
+    uint8_t* frameData = frame->data;
     
     uint8_t *Fdata = F.data;
     int Fstep = F.step;
@@ -55,13 +72,16 @@ void PBAS::updateF(uint8_t *frameData, int x, int y, int stride) {
     }
     // check if at least K distances are less than R(x,y)
     if(k >= K) {
-        *getPixelPtr(Fdata, x,y,Fstep) = 1;
+        //*getPixelPtr(Fdata, x,y,Fstep) = 1;
+        F.at<uint8_t>(Point(x,y)) = 1;
     } else {
-        *getPixelPtr(Fdata, x,y,Fstep) = 0;
-        //updateB(frameData, x, y);
+        //*getPixelPtr(Fdata, x,y,Fstep) = 0;
+        F.at<uint8_t>(Point(x,y)) = 0;
+        updateB(frame, x, y);
     }
 }
 
+<<<<<<< HEAD
 void PBAS::updateB(Mat* frame, int x, int y){
     int rand_numb, n, y_disp, x_disp;
     pair<int, int> disp;
@@ -109,6 +129,9 @@ void PBAS::updateB(Mat* frame, int x, int y){
 }
 
 void PBAS::updateR(Mat* frame, int x, int y, int n){
+=======
+void PBAS::updateR(Mat* frame, int x, int y, int n) {
+>>>>>>> master
     cout << "im in" << endl;
 }
 
@@ -119,8 +142,13 @@ Mat* PBAS::process(Mat* frame) {
     // data stores pixel values and can be used for fast access by pointer
     uint8_t *frameData = frame->data;
 
+<<<<<<< HEAD
     // B, D, d_minavg T initialization
     if (B.size() == 0) {
+=======
+    // B, D, d_minavg initialization
+    if (!B.size()) {
+>>>>>>> master
         for(int i=0; i<N; i++) {
             Mat b_elem(h, w, CV_32FC1);
             randn(b_elem, Scalar(0.0), Scalar(1));
@@ -128,16 +156,20 @@ Mat* PBAS::process(Mat* frame) {
 
             Mat d_elem = Mat::zeros(h, w, CV_32FC1);
             D.push_back(d_elem);
-
         }
+        F = Mat::zeros(h, w, CV_8UC1);
         d_minavg = Mat::zeros(h, w, CV_32FC1);
+<<<<<<< HEAD
         T = Mat::zeros(h, w, CV_32FC1);
+=======
+        R = Mat::zeros(h, w, CV_32FC1);
+>>>>>>> master
     }
 
     for(int x = 0; x < h; x++)
         for(int y = 0; y < w; y++)
         {
-            updateF(frameData, x,y,stride);
+            updateF(frame, x,y,stride);
             //updateR(frame, x,y);
             //updateT(frame, x,y);
         }
