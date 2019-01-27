@@ -44,9 +44,10 @@ float PBAS::distance(int a, int b) {
     return abs(a-b);
 }
 
-void PBAS::updateF(uint8_t *frameData, int x, int y, int stride) {
+void PBAS::updateF(Mat* frame, int x, int y, int stride) {
     Mat* B_copy;
     Mat* R_copy;
+    uint8_t* frameData = frame->data;
     
     uint8_t *Fdata = F.data;
     int Fstep = F.step;
@@ -68,10 +69,12 @@ void PBAS::updateF(uint8_t *frameData, int x, int y, int stride) {
     }
     // check if at least K distances are less than R(x,y)
     if(k >= K) {
-        *getPixelPtr(Fdata, x,y,Fstep) = 1;
+        //*getPixelPtr(Fdata, x,y,Fstep) = 1;
+        F.at<uint8_t>(Point(x,y)) = 1;
     } else {
-        *getPixelPtr(Fdata, x,y,Fstep) = 0;
-        //updateB(frameData, x, y);
+        //*getPixelPtr(Fdata, x,y,Fstep) = 0;
+        F.at<uint8_t>(Point(x,y)) = 0;
+        updateB(frame, x, y);
     }
 }
 
@@ -87,7 +90,7 @@ Mat* PBAS::process(Mat* frame) {
     uint8_t *frameData = frame->data;
 
     // B, D, d_minavg initialization
-    if (B.size() == 0) {
+    if (!B.size()) {
         for(int i=0; i<N; i++) {
             Mat b_elem(h, w, CV_32FC1);
             randn(b_elem, Scalar(0.0), Scalar(1));
@@ -96,13 +99,15 @@ Mat* PBAS::process(Mat* frame) {
             Mat d_elem = Mat::zeros(h, w, CV_32FC1);
             D.push_back(d_elem);
         }
+        F = Mat::zeros(h, w, CV_8UC1);
         d_minavg = Mat::zeros(h, w, CV_32FC1);
+        R = Mat::zeros(h, w, CV_32FC1);
     }
 
     for(int x = 0; x < h; x++)
         for(int y = 0; y < w; y++)
         {
-            updateF(frameData, x,y,stride);
+            updateF(frame, x,y,stride);
             //updateR(frame, x,y);
             //updateT(frame, x,y);
         }
