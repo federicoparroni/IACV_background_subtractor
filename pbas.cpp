@@ -76,7 +76,7 @@ void PBAS::updateF(Mat* frame, int x, int y, int stride) {
         //cout << "Pixel: " << getPixel(frameData,x,y,stride) << endl;
         
         //if(distance(getPixel(frameData,x,y,stride), getPixel(B[j].data,x,y,Bstep)) < getPixel(Rdata,x,y,Rstep)) {
-        if(distance(frame->at<double>(x,y), (int)B[j].at<uchar>(x,y)) < R.at<double>(x,y)) {
+        if(distance((int)frame->at<uchar>(x,y), (int)B[j].at<uchar>(x,y)) < R.at<float>(x,y)) {
             k++;
         }
         j++;
@@ -111,21 +111,21 @@ void PBAS::updateR(Mat* frame, int x, int y, int n) {
     for (int i=0; i<N; i++){
         d_cum += (int)D[i].at<uchar>(x, y);
     }
-    d_minavg.at<double>(x,y) = d_cum/double(N);
-    cout << d_minavg.at<double>(x, y) << endl;
+    d_minavg.at<float>(x,y) = d_cum/float(N);
+    //cout << d_minavg.at<float>(x, y) << endl;
 
     // update R
-    if (R.at<double>(x,y) > d_minavg.at<double>(x,y) * R_scale){
-        R.at<double>(x,y) = R.at<double>(x,y)*(1 - R_incdec);
+    if (R.at<float>(x,y) > d_minavg.at<float>(x,y) * R_scale){
+        R.at<float>(x,y) = R.at<float>(x,y)*(1 - R_incdec);
     } else {
-        R.at<double>(x,y) = R.at<double>(x,y)*(1 + R_incdec);
+        R.at<float>(x,y) = R.at<float>(x,y)*(1 + R_incdec);
     }
 }
 
 void PBAS::updateB(Mat* frame, int x, int y){
     int rand_numb, n, y_disp, x_disp;
     pair<int, int> disp;
-    double update_p;
+    float update_p;
     vector<pair<int, int> > displacement_vec;
     
     displacement_vec.push_back(make_pair(-1, -1));
@@ -142,12 +142,12 @@ void PBAS::updateB(Mat* frame, int x, int y){
     // generate a number between 0 and 99
     rand_numb = rand() %100;
     // get the T[x,y]
-    update_p = (1/(T.at<double>(x,y)))*100;
+    update_p = (1/(T.at<float>(x,y)))*100;
 
     if(rand_numb < update_p){
         //generate a random number between 0 and N-1
         n = rand() % N;
-        B[n].at<double>(x, y) = frame->at<double>(x, y);
+        B[n].at<uchar>(x, y) = frame->at<uint8_t>(x, y);
 
         y_disp = 0;
         x_disp = 0;
@@ -159,23 +159,23 @@ void PBAS::updateB(Mat* frame, int x, int y){
             y_disp = disp.second;
         }
 
-        B[n].at<double>(x+x_disp, y+y_disp) = frame->at<double>(x+x_disp, y+y_disp);
+        B[n].at<uchar>(x+x_disp, y+y_disp) = frame->at<uchar>(x+x_disp, y+y_disp);
         
-        //updateR(frame, x, y, n);
-        //updateR(frame, x+x_disp, y+y_disp, n);
+        updateR(frame, x, y, n);
+        updateR(frame, x+x_disp, y+y_disp, n);
 
     }
 }
 
 void PBAS::updateT(int x, int y){
     float Tinc_over_dmin;
-    Tinc_over_dmin = T_inc/d_minavg.at<double>(x,y);
-    if(F.at<double>(x,y)==1)
-        T.at<double>(x,y) += Tinc_over_dmin;
+    Tinc_over_dmin = T_inc/d_minavg.at<float>(x,y);
+    if((int)F.at<uchar>(x,y)==1)
+        T.at<float>(x,y) += Tinc_over_dmin;
     else
-        T.at<double>(x,y) -= Tinc_over_dmin;
-    T.at<double>(x,y) = max((double)T_lower, T.at<double>(x,y));
-    T.at<double>(x,y) = min((double)T_upper, T.at<double>(x,y));   
+        T.at<float>(x,y) -= Tinc_over_dmin;
+    T.at<float>(x,y) = max((float)T_lower, T.at<float>(x,y));
+    T.at<float>(x,y) = min((float)T_upper, T.at<float>(x,y));   
 }
 
 Mat* PBAS::process(Mat* frame) {
@@ -199,7 +199,7 @@ Mat* PBAS::process(Mat* frame) {
         F = Mat::zeros(h, w, CV_8UC1);
         d_minavg = Mat::zeros(h, w, CV_32FC1);
         T = Mat::ones(h, w, CV_32FC1);
-        R = Mat::zeros(h, w, CV_32FC1);
+        R = Mat::ones(h, w, CV_32FC1);
     }
 
     for(int x = 0; x < h; x++)
