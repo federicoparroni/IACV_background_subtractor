@@ -32,7 +32,7 @@ class PBAS
 
         void updateF(uint8_t *frameData, int x, int y, int stride);
         void updateB(Mat* frame, int x, int y);
-        void updateR();
+        void updateR(Mat* frame, int x, int y, int n);
         void updateT();
     public:
         PBAS();

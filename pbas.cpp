@@ -6,11 +6,27 @@ using namespace std;
 
 
 PBAS::PBAS() {
-    cout << "Ciao!" << endl;
+    N = 30;
+    K = 2;
+    R_incdec = 0.05;
+    R_lower = 18;
+    R_scale = 5;
+    T_dec = 0.05;
+    T_inc = 1;
+    T_lower = 2;
+    T_upper = 200;
 }
 PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, float T_dec=0.05, int T_inc=1, int T_lower=2, int T_upper=200)
 {
-    cout << "Ciao!" << endl;
+    this->N = N;
+    this->K = K;
+    this->R_incdec = R_incdec;
+    this->R_lower = R_lower;
+    this->R_scale = R_scale;
+    this->T_dec = T_dec;
+    this->T_inc = T_inc;
+    this->T_lower = T_lower;
+    this->T_upper = T_upper;
 }
 
 PBAS::~PBAS() {}
@@ -59,7 +75,7 @@ void PBAS::updateF(uint8_t *frameData, int x, int y, int stride) {
     }
 }
 
-void PBAS::updateR(Mat* frame, int x, int y, int n){
+void PBAS::updateR(Mat* frame, int x, int y, int n) {
     cout << "im in" << endl;
 }
 
@@ -79,7 +95,6 @@ Mat* PBAS::process(Mat* frame) {
 
             Mat d_elem = Mat::zeros(h, w, CV_32FC1);
             D.push_back(d_elem);
-
         }
         d_minavg = Mat::zeros(h, w, CV_32FC1);
     }
