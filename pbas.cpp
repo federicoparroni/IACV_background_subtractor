@@ -32,7 +32,14 @@ PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, f
     this->T_upper = T_upper;
 }
 
-PBAS::~PBAS() {}
+PBAS::~PBAS() {
+    B.clear();
+    R.release();
+    D.clear();
+    T.release();
+    F.release();
+    d_minavg.release();
+}
 
 uint8_t PBAS::getPixel(uint8_t *data, int x, int y, int stride) {
     return data[x * stride + y];
@@ -65,6 +72,7 @@ void PBAS::updateF(Mat* frame, int x, int y, int stride) {
         uint8_t *Bdata = B[j].data;
         int Bstep = B[j].step;
         //if(distance(frame[x,y], B_copy[j,x,y]) < R_copy[x,y]) {
+        cout << "Pixel: " << getPixel(frameData,x,y,stride) << endl;
         if(distance(getPixel(frameData,x,y,stride), getPixel(B[j].data,x,y,Bstep)) < getPixel(Rdata,x,y,Rstep)) {
             k++;
         }

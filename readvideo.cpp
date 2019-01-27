@@ -18,17 +18,18 @@ int main(int argc, char const *argv[]) {
         return -1;
     }
     while(1){
-        Mat frame;
         cap >> frame;
         if (frame.empty()) break;
 
         cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
         mask = pbas->process(&gray);
-        imshow("Frame", *mask);
+        imshow("Frame", frame);
+        imshow("Mask", *mask);
         char c=(char)waitKey(25);
         if(c==27) break;
     }
+    pbas->~PBAS();
     cap.release();
-    destroyAllWindows(); 
+    destroyAllWindows();
     return 0;
 }  
