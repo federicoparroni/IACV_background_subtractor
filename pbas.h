@@ -26,6 +26,7 @@ class PBAS
         Mat F;
         float d_minavg;
 
+        uint8_t getPixel(uint8_t *, int x, int y, int stride);
         float distance(int, int);
 
         void updateF(Mat* frame, int x, int y);
