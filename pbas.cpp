@@ -81,7 +81,6 @@ void PBAS::updateF(Mat* frame, int x, int y, int stride) {
     }
 }
 
-<<<<<<< HEAD
 void PBAS::updateB(Mat* frame, int x, int y){
     int rand_numb, n, y_disp, x_disp;
     pair<int, int> disp;
@@ -129,9 +128,6 @@ void PBAS::updateB(Mat* frame, int x, int y){
 }
 
 void PBAS::updateR(Mat* frame, int x, int y, int n){
-=======
-void PBAS::updateR(Mat* frame, int x, int y, int n) {
->>>>>>> master
     cout << "im in" << endl;
 }
 
@@ -142,13 +138,8 @@ Mat* PBAS::process(Mat* frame) {
     // data stores pixel values and can be used for fast access by pointer
     uint8_t *frameData = frame->data;
 
-<<<<<<< HEAD
-    // B, D, d_minavg T initialization
-    if (B.size() == 0) {
-=======
     // B, D, d_minavg initialization
     if (!B.size()) {
->>>>>>> master
         for(int i=0; i<N; i++) {
             Mat b_elem(h, w, CV_32FC1);
             randn(b_elem, Scalar(0.0), Scalar(1));
@@ -159,11 +150,8 @@ Mat* PBAS::process(Mat* frame) {
         }
         F = Mat::zeros(h, w, CV_8UC1);
         d_minavg = Mat::zeros(h, w, CV_32FC1);
-<<<<<<< HEAD
         T = Mat::zeros(h, w, CV_32FC1);
-=======
         R = Mat::zeros(h, w, CV_32FC1);
->>>>>>> master
     }
 
     for(int x = 0; x < h; x++)
