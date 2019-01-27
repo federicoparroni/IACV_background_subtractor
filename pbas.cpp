@@ -65,6 +65,20 @@ Mat* PBAS::process(Mat* frame) {
     // data stores pixel values and can be used for fast access by pointer
     uint8_t *frameData = frame->data;
 
+    // B, D, d_minavg initialization
+    if (B.size() == 0) {
+        for(int i=0; i<N; i++) {
+            Mat b_elem(h, w, CV_32FC1);
+            randn(b_elem, Scalar(0.0), Scalar(1));
+            B.push_back(b_elem);
+
+            Mat d_elem = Mat::zeros(h, w, CV_32FC1);
+            D.push_back(d_elem);
+
+        }
+        d_minavg = Mat::zeros(h, w, CV_32FC1);
+    }
+
     for(int x = 0; x < h; x++)
         for(int y = 0; y < w; y++)
         {

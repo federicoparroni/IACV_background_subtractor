@@ -24,7 +24,7 @@ class PBAS
         vector<Mat> D;
         Mat T;
         Mat F;
-        float d_minavg;
+        Mat d_minavg;
 
         uint8_t getPixel(uint8_t *data, int x, int y, int stride);
         float distance(int, int);
