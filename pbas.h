@@ -30,9 +30,9 @@ class PBAS
         uint8_t* getPixelPtr(uint8_t *data, int x, int y, int stride);
         float distance(int, int);
 
-        void updateF(uint8_t *frameData, int x, int y, int stride);
+        void updateF(Mat* frame, int x, int y, int stride);
         void updateB(Mat* frame, int x, int y);
-        void updateR();
+        void updateR(Mat* frame, int x, int y, int n);
         void updateT();
     public:
         PBAS();
