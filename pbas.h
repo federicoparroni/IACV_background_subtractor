@@ -26,10 +26,10 @@ class PBAS
         Mat F;
         float d_minavg;
 
-        uint8_t getPixel(uint8_t *, int x, int y, int stride);
+        uint8_t getPixel(uint8_t *data, int x, int y, int stride);
         float distance(int, int);
 
-        void updateF(Mat* frame, int x, int y);
+        void updateF(uint8_t *frameData, int x, int y, int stride);
         void updateB(Mat* frame, int x, int y);
         void updateR();
         void updateT();
@@ -38,6 +38,6 @@ class PBAS
         PBAS(int N, int K, float R_incdec, int R_lower, int R_scale, float T_dec, int T_inc, int T_lower, int T_upper);
         ~PBAS();
 
-        Mat* process(Mat);
+        Mat* process(Mat*);
 
 };

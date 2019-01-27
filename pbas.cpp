@@ -18,29 +18,42 @@ PBAS::~PBAS() {}
 uint8_t getPixel(uint8_t *data, int x, int y, int stride) {
     return data[x * stride + y];
 }
+uint8_t* getPixelPtr(uint8_t *data, int x, int y, int stride) {
+    return data + x * stride + y;
+}
+
 
 float PBAS::distance(int a, int b) {
     return abs(a-b);
 }
 
-void PBAS::updateF(Mat *frame, int x, int y) {
+void PBAS::updateF(uint8_t *frameData, int x, int y, int stride) {
     Mat* B_copy;
     Mat* R_copy;
+    
+    uint8_t *Fdata = F.data;
+    int Fstep = F.step;
+    uint8_t *Bdata = B.data;
+    int Bstep = B[0].step;
+    uint8_t *Rdata = R.data;
+    int Rstep = R.step;
+
     //c = 0
     //while c < 3 or k >= self.K:
     int k = 0;       // number of lower-than-R distances for the channel 'c'
     int j = 0;
     while(j < N || k >= K) {
-        if(distance(frame[x,y], B_copy[j,x,y]) < R_copy[x,y]) {
+        //if(distance(frame[x,y], B_copy[j,x,y]) < R_copy[x,y]) {
+        if(distance(getPixel(frameData,x,y,stride), getPixel(B[j].data,x,y,Bstep)) < getPixel(Rdata,x,y,Rstep)) {
             k++;
         }
         j++;
     }
     // check if at least K distances are less than R(x,y)
     if(k >= K) {
-        F.at<int>(row_num, col_num) = value; = 1;
+        getPixelPtr(Fdata, x,y,Fstep) = 1;
     } else {
-        F[x, y] = 0;
+        getPixel(Fdata, x,y,Fstep) = 0;
         updateBg(frame, x, y);
     }
 }
@@ -48,19 +61,19 @@ void PBAS::updateF(Mat *frame, int x, int y) {
 Mat* PBAS::process(Mat* frame) {
     w = frame->cols;
     h = frame->rows;
-    int _stride = frame->step;
-    // data stores pixel values and ca be used for fast access by pointer
+    int stride = frame->step;
+    // data stores pixel values and can be used for fast access by pointer
     uint8_t *frameData = frame->data;
 
     for(int x = 0; x < h; x++)
         for(int y = 0; y < w; y++)
         {
-            updateF(frame, x);
+            updateF(frameData, x,y,stride);
             updateR(frame, x,y);
             updateT(frame, x,y);
         }
     
-    return F;
+    return &F;
 }
 
 
