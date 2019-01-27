@@ -59,8 +59,35 @@ void PBAS::updateF(uint8_t *frameData, int x, int y, int stride) {
     }
 }
 
-void PBAS::updateR(Mat* frame, int x, int y, int n){
-    cout << "im in" << endl;
+void PBAS::updateR(Mat* frame, int x, int y, int n) {
+    // find dmin
+    int I = (int)frame->at<uchar>(x, y);
+    int d_min = 255;
+    int d_act = 0;
+    for (int i=0; i<N; i++){
+        d_act = distance(I, (int)B[i].at<uchar>(x, y));
+        if (d_act < d_min)
+            d_min = d_act;
+    }
+
+    // update Dk
+    D[n].at<uchar>(x, y) = d_min;
+
+    // find davg
+    int d_cum = 0;
+    for (int i=0; i<N; i++){
+        d_cum += (int)D[i].at<uchar>(x, y);
+    }
+    d_minavg.at<double>(x,y) = d_cum/double(N);
+    cout << d_minavg.at<double>(x, y) << endl;
+
+    // update R
+    if (R.at<double>(x,y) > d_minavg.at<double>(x,y) * R_scale){
+        R.at<double>(x,y) = R.at<double>(x,y)*(1 - R_incdec);
+    } else {
+        R.at<double>(x,y) = R.at<double>(x,y)*(1 + R_incdec);
+    }
+
 }
 
 Mat* PBAS::process(Mat* frame) {
@@ -73,15 +100,16 @@ Mat* PBAS::process(Mat* frame) {
     // B, D, d_minavg initialization
     if (B.size() == 0) {
         for(int i=0; i<N; i++) {
-            Mat b_elem(h, w, CV_32FC1);
-            randn(b_elem, Scalar(0.0), Scalar(1));
+            Mat b_elem(h, w, CV_8UC1);
+            randu(b_elem, 0, 255);
             B.push_back(b_elem);
 
-            Mat d_elem = Mat::zeros(h, w, CV_32FC1);
+            Mat d_elem = Mat::zeros(h, w, CV_8UC1);
             D.push_back(d_elem);
 
         }
         d_minavg = Mat::zeros(h, w, CV_32FC1);
+        R = Mat::zeros(h, w, CV_32FC1);
     }
 
     for(int x = 0; x < h; x++)
