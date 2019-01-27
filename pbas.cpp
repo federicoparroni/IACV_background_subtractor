@@ -3,7 +3,8 @@
 #include "pbas.h"
 #include <stdlib.h>
 #include <time.h>
-#include <utility>       
+#include <utility>      
+#include <algorithm> 
 
 using namespace std;
 
@@ -68,12 +69,14 @@ void PBAS::updateF(Mat* frame, int x, int y, int stride) {
     //while c < 3 or k >= self.K:
     int k = 0;       // number of lower-than-R distances for the channel 'c'
     int j = 0;
-    while(j < N || k >= K) {
+    while(j < N && k < K) {
         uint8_t *Bdata = B[j].data;
         int Bstep = B[j].step;
         //if(distance(frame[x,y], B_copy[j,x,y]) < R_copy[x,y]) {
-        cout << "Pixel: " << getPixel(frameData,x,y,stride) << endl;
-        if(distance(getPixel(frameData,x,y,stride), getPixel(B[j].data,x,y,Bstep)) < getPixel(Rdata,x,y,Rstep)) {
+        //cout << "Pixel: " << getPixel(frameData,x,y,stride) << endl;
+        
+        //if(distance(getPixel(frameData,x,y,stride), getPixel(B[j].data,x,y,Bstep)) < getPixel(Rdata,x,y,Rstep)) {
+        if(distance(frame->at<double>(x,y), (int)B[j].at<uchar>(x,y)) < R.at<double>(x,y)) {
             k++;
         }
         j++;
@@ -81,7 +84,7 @@ void PBAS::updateF(Mat* frame, int x, int y, int stride) {
     // check if at least K distances are less than R(x,y)
     if(k >= K) {
         //*getPixelPtr(Fdata, x,y,Fstep) = 1;
-        F.at<uint8_t>(x,y) = 1;
+        F.at<uint8_t>(x,y) = 255;
     } else {
         //*getPixelPtr(Fdata, x,y,Fstep) = 0;
         F.at<uint8_t>(x,y) = 0;
@@ -139,9 +142,9 @@ void PBAS::updateB(Mat* frame, int x, int y){
     // generate a number between 0 and 99
     rand_numb = rand() %100;
     // get the T[x,y]
-    update_p = T.at<double>(x,y)*100;
+    update_p = (1/(T.at<double>(x,y)))*100;
 
-    if(rand_numb > update_p){
+    if(rand_numb < update_p){
         //generate a random number between 0 and N-1
         n = rand() % N;
         B[n].at<double>(x, y) = frame->at<double>(x, y);
@@ -164,6 +167,17 @@ void PBAS::updateB(Mat* frame, int x, int y){
     }
 }
 
+void PBAS::updateT(int x, int y){
+    float Tinc_over_dmin;
+    Tinc_over_dmin = T_inc/d_minavg.at<double>(x,y);
+    if(F.at<double>(x,y)==1)
+        T.at<double>(x,y) += Tinc_over_dmin;
+    else
+        T.at<double>(x,y) -= Tinc_over_dmin;
+    T.at<double>(x,y) = max((double)T_lower, T.at<double>(x,y));
+    T.at<double>(x,y) = min((double)T_upper, T.at<double>(x,y));   
+}
+
 Mat* PBAS::process(Mat* frame) {
     w = frame->cols;
     h = frame->rows;
@@ -176,6 +190,7 @@ Mat* PBAS::process(Mat* frame) {
         for(int i=0; i<N; i++) {
             Mat b_elem(h, w, CV_8UC1);
             randu(b_elem, 0, 255);
+            //cout << (int)b_elem.at<uchar>(0,0) << endl;
             B.push_back(b_elem);
 
             Mat d_elem = Mat::zeros(h, w, CV_8UC1);
@@ -183,7 +198,7 @@ Mat* PBAS::process(Mat* frame) {
         }
         F = Mat::zeros(h, w, CV_8UC1);
         d_minavg = Mat::zeros(h, w, CV_32FC1);
-        T = Mat::zeros(h, w, CV_32FC1);
+        T = Mat::ones(h, w, CV_32FC1);
         R = Mat::zeros(h, w, CV_32FC1);
     }
 
@@ -191,8 +206,8 @@ Mat* PBAS::process(Mat* frame) {
         for(int y = 0; y < w; y++)
         {
             updateF(frame, x,y,stride);
-            //updateR(frame, x,y);
-            //updateT(frame, x,y);
+            updateT(x, y);
+            //cout << x << endl;
         }
     
     return &F;
