@@ -120,6 +120,8 @@ void PBAS::updateR(Mat* frame, int x, int y, int n) {
     } else {
         R.at<float>(x,y) = R.at<float>(x,y)*(1 + R_incdec);
     }
+    //cant got under R_lower
+    R.at<float>(x,y) = max((float)R_lower, R.at<float>(x,y));
 }
 
 void PBAS::updateB(Mat* frame, int x, int y){
@@ -178,6 +180,14 @@ void PBAS::updateT(int x, int y){
     T.at<float>(x,y) = min((float)T_upper, T.at<float>(x,y));   
 }
 
+void PBAS::init_Mat(Mat matrix, float initial_value){
+    for(int i=0; i<h; i++){
+        for(int j=0; j<w; j++){
+            matrix.at<float>(i,j) = initial_value;
+        }
+    }
+}
+
 Mat* PBAS::process(Mat* frame) {
     w = frame->cols;
     h = frame->rows;
@@ -198,8 +208,11 @@ Mat* PBAS::process(Mat* frame) {
         }
         F = Mat::zeros(h, w, CV_8UC1);
         d_minavg = Mat::zeros(h, w, CV_32FC1);
-        T = Mat::ones(h, w, CV_32FC1);
-        R = Mat::ones(h, w, CV_32FC1);
+        T = Mat::zeros(h, w, CV_32FC1);
+        R = Mat::zeros(h, w, CV_32FC1);
+
+        init_Mat(T, R_lower);
+        init_Mat(R, R_lower);
     }
 
     for(int x = 0; x < h; x++)

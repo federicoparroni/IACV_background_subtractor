@@ -34,6 +34,7 @@ class PBAS
         void updateB(Mat* frame, int x, int y);
         void updateR(Mat* frame, int x, int y, int n);
         void updateT(int x, int y);
+        void init_Mat(Mat matrix, float initial_value);
     public:
         PBAS();
         PBAS(int N, int K, float R_incdec, int R_lower, int R_scale, float T_dec, int T_inc, int T_lower, int T_upper);
