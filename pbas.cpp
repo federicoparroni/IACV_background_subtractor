@@ -59,6 +59,10 @@ void PBAS::updateF(uint8_t *frameData, int x, int y, int stride) {
     }
 }
 
+void PBAS::updateR(Mat* frame, int x, int y, int n){
+    cout << "im in" << endl;
+}
+
 Mat* PBAS::process(Mat* frame) {
     w = frame->cols;
     h = frame->rows;
@@ -90,3 +94,8 @@ Mat* PBAS::process(Mat* frame) {
     
     return &F;
 }
+
+// int main(int argc, char const *argv[]){
+//     PBAS* p = new PBAS();
+
+// }

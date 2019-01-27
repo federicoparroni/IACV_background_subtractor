@@ -1,31 +1,37 @@
 #include <iostream>
 #include <opencv2/opencv.hpp>
-#include "pbas.h"
+#include "pbas.cpp"
 
 using namespace std;
 using namespace cv;
 
-int main(int argc, char const *argv[])
-{
-    char videopath[] = "/Users/federico/Documents/Repository/IACVproject/dataset/HighwayI/HighwayI_%06d.png";
-    VideoCapture cap(videopath);
-
+int main(int argc, char const *argv[]) {
+    VideoCapture cap("videos/salitona.mp4");
     PBAS *pbas = new PBAS();
 
     Mat frame;
     Mat gray;
     Mat *mask;
-    while(1)
-    {
-        cap >> frame;
-        if(!frame.data) break;
 
-        cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
-        //mask = pbas->process(&frame);
-        imshow("Video", gray);
-
-        if(waitKey(10) >= 0) break;              
+    if(!cap.isOpened()){
+        cout << "Error opening video stream or file" << endl;
+        return -1;
     }
+    while(1){
+        Mat frame;
+        cap >> frame;
+        if (frame.empty())
+            break;
+        cvtColor(frame, frame, cv::COLOR_RGB2GRAY);
+        imshow("Frame", frame);
+        char c=(char)waitKey(25);
+        if(c==27)
+            break;
+        
+        
 
+    }
+    cap.release();
+    destroyAllWindows(); 
     return 0;
-}
+}  
