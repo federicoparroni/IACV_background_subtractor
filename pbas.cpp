@@ -136,30 +136,16 @@ Mat* PBAS::process(const Mat frame) {
 
         init_Mat(T, T_lower);
         init_Mat(R, R_lower);
-
-        F.at<uint8_t>(0,0) = 101;
     }
-
-    // auto start = high_resolution_clock::now();
-    // for(int x = 0; x < h; x++) {
-    //     for(int y = 0; y < w; y++)
-    //     {
-    //         updateF(frame, x,y,stride);
-    //         updateT(x, y);
-    //     }
-    // }
-    // auto stop = high_resolution_clock::now();
-    // auto duration = duration_cast<milliseconds>(stop - start);
-    // cout << duration.count() << "ms" << endl;
 
     int channels = frame.channels();
     int nRows = this->h;
     int nCols = w * channels;
-    int y;
-    if (frame.isContinuous() && F.isContinuous() && R.isContinuous() && T.isContinuous()) {
-        nCols *= h;
-        nRows = 1;
-    }
+    // int y;
+    // if (frame.isContinuous() && F.isContinuous() && R.isContinuous() && T.isContinuous()) {
+    //     nCols *= nRows;
+    //     nRows = 1;
+    // }
     auto start = high_resolution_clock::now();
     for(int x=0; x < nRows; ++x) {
         this->i = frame.ptr<uint8_t>(x);
@@ -168,12 +154,10 @@ Mat* PBAS::process(const Mat frame) {
         this->r = R.ptr<float>(x);
         this->t = T.ptr<float>(x);
 
-        cout << "F[0]: " << q[0] << endl;
         for (int i_ptr=0; i_ptr < nCols; ++i_ptr) {
-            y = i_ptr % (channels * h);
-            // f[y] is the pointer to the current pixel, r[y], t[y]
-            updateF(x, y, i_ptr);
-            updateT(x, y, i_ptr);
+            //y = i_ptr % (channels * this->h);
+            updateF(x, i_ptr, i_ptr);
+            updateT(x, i_ptr, i_ptr);
         }
     }
     auto stop = high_resolution_clock::now();
@@ -198,10 +182,10 @@ void PBAS::updateF(int x, int y, int i_ptr) {
     }
     // check if at least K distances are less than R(x,y) => background pixel
     if(k >= K) {
-        q[y] = 0;
+        q[i_ptr] = 0;
         updateB(x, y, i_ptr);
     } else {
-        q[y] = 255;
+        q[i_ptr] = 255;
     }
 }
 
@@ -316,10 +300,10 @@ void PBAS::updateT(int x, int y, int i_ptr) {
 
     float Tinc_over_dmin;
     Tinc_over_dmin = T_inc / d_minavg.at<float>(x,y);
-    if(q[i_ptr]==1)
-        q[i_ptr] += Tinc_over_dmin;
+    if(q[i_ptr] == 255)
+        t[i_ptr] += Tinc_over_dmin;
     else
-        q[i_ptr] -= Tinc_over_dmin;
-    q[i_ptr] = max((float)T_lower, t[i_ptr]);
-    q[i_ptr] = min((float)T_upper, t[i_ptr]);
+        t[i_ptr] -= Tinc_over_dmin;
+    t[i_ptr] = max((float)T_lower, t[i_ptr]);
+    t[i_ptr] = min((float)T_upper, t[i_ptr]);
 }
