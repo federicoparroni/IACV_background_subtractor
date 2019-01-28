@@ -68,6 +68,10 @@ float PBAS::distance(uint8_t a, uint8_t b) {
     return abs(a-b);
 }
 
+float PBAS::distance(uint8_t p, uint8_t p_grad, uint8_t g, uint8_t g_grad) {
+    return (this->alpha/this->I_m) * abs(p - g) + abs(p_grad - g_grad); 
+}
+
 Mat PBAS::gradient_magnitude(Mat* frame){
     Mat grad;
     int scale = 1;
@@ -159,6 +163,7 @@ Mat* PBAS::process(const Mat frame) {
     auto start = high_resolution_clock::now();
     for(int x=0; x < nRows; ++x) {
         this->i = frame.ptr<uint8_t>(x);
+        this->i_grad = frame_grad.ptr<uint8_t>(x);
         this->q = F.ptr<uint8_t>(x);
         this->r = R.ptr<float>(x);
         this->t = T.ptr<float>(x);
@@ -186,7 +191,7 @@ void PBAS::updateF(int x, int y, int i_ptr) {
     int k = 0;       // number of lower-than-R distances for the channel 'c'
     int j = 0;
     while(j < N && k < K) {
-        if(distance(i[i_ptr], B[j].at<uint8_t>(x,y)) < r[i_ptr]) {
+        if(distance(i[i_ptr], i_grad[i_ptr], B[j].at<uint8_t>(x,y), B_grad[j].at<uint8_t>(x,y)) < r[i_ptr]) {
             k++;
         }
         j++;
@@ -217,6 +222,7 @@ void PBAS::updateB(int x, int y, int i_ptr) {
     if(rand_numb < update_p) {
         //generate a random number between 0 and N-1
         B[n].at<uint8_t>(x, y) = i[i_ptr];
+        B_grad[n].at<uint8_t>(x, y) = i_grad[i_ptr];
         updateR(x, y, n, i_ptr);
     }
     
@@ -244,10 +250,11 @@ void PBAS::updateR(int x, int y, int n, int i_ptr) {
 
     // find dmin
     uint8_t I = i[i_ptr];
+    uint8_t I_grad = i_grad[i_ptr];
     int d_min = 255;
     int d_act = 0;
     for (int i=0; i<N; i++){
-        d_act = distance(I, B[i].at<uint8_t>(x, y));
+        d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<uint8_t>(x, y));
         if (d_act < d_min)
             d_min = d_act;
     }
@@ -275,10 +282,11 @@ void PBAS::updateR(int x, int y, int n, int i_ptr) {
 void PBAS::updateR_notoptimized(int x, int y, int n) {
     // find dmin
     uint8_t I = frame.at<uint8_t>(x, y);
+    uint8_t I_grad = frame_grad.at<uint8_t>(x,y);
     int d_min = 255;
     int d_act = 0;
     for (int i=0; i<N; i++){
-        d_act = distance(I, (int)B[i].at<uchar>(x, y));
+        d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<uint8_t>(x, y));
         if (d_act < d_min)
             d_min = d_act;
     }

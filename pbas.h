@@ -33,6 +33,7 @@ class PBAS
         vector<pair<int,int>> displacement_vec;
 
         const uint8_t *i;
+        const uint8_t *i_grad;
         uint8_t *q;
         float *r;
         float *t;
@@ -40,6 +41,7 @@ class PBAS
         void init();
 
         float distance(uint8_t, uint8_t);
+        float distance(uint8_t p, uint8_t p_grad, uint8_t g, uint8_t g_grad);
 
         void updateF(int x, int y, int i_ptr);
         void updateB(int x, int y, int i_ptr);
