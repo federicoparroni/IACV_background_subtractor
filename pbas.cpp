@@ -224,6 +224,7 @@ void PBAS::updateB(int x, int y, int i_ptr) {
         }
 
         B[n].at<uint8_t>(x+x_disp, y+y_disp) = frame.at<uint8_t>(x+x_disp, y+y_disp);
+        B_grad[n].at<uint8_t>(x+x_disp, y+y_disp) = frame_grad.at<uint8_t>(x+x_disp, y+y_disp);
         
         updateR_notoptimized(x+x_disp, y+y_disp, n);
     }
