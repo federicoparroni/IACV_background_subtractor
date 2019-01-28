@@ -56,8 +56,10 @@ float PBAS::distance(int a, int b) {
 }
 
 void PBAS::updateF(Mat* frame, int x, int y, int stride) {
-    Mat* B_copy;
-    Mat* R_copy;
+
+    //vector<Mat> B_copy(B);
+    //Mat R_copy = R.clone();
+
     uint8_t* frameData = frame->data;
     
     uint8_t *Fdata = F.data;
@@ -83,12 +85,12 @@ void PBAS::updateF(Mat* frame, int x, int y, int stride) {
     }
     // check if at least K distances are less than R(x,y)
     if(k >= K) {
-        //*getPixelPtr(Fdata, x,y,Fstep) = 1;
-        F.at<uint8_t>(x,y) = 255;
-    } else {
         //*getPixelPtr(Fdata, x,y,Fstep) = 0;
         F.at<uint8_t>(x,y) = 0;
         updateB(frame, x, y);
+    } else {
+        //*getPixelPtr(Fdata, x,y,Fstep) = 255;
+        F.at<uint8_t>(x,y) = 255;
     }
 }
 
@@ -145,12 +147,19 @@ void PBAS::updateB(Mat* frame, int x, int y){
     rand_numb = rand() %100;
     // get the T[x,y]
     update_p = (1/(T.at<float>(x,y)))*100;
+    n = rand() % N;
 
     if(rand_numb < update_p){
         //generate a random number between 0 and N-1
-        n = rand() % N;
-        B[n].at<uchar>(x, y) = frame->at<uint8_t>(x, y);
-
+        B[n].at<uchar>(x, y) = frame->at<uchar>(x, y);
+        //cout << (int)B[n].at<uchar>(x, y) << endl;
+        //cout << (int)frame->at<uchar>(x, y) << endl;
+        updateR(frame, x, y, n);
+    }
+    
+    rand_numb = rand() %100;
+    if(rand_numb < update_p){
+        //generate a random number between 0 and N-1
         y_disp = 0;
         x_disp = 0;
 
@@ -162,10 +171,7 @@ void PBAS::updateB(Mat* frame, int x, int y){
         }
 
         B[n].at<uchar>(x+x_disp, y+y_disp) = frame->at<uchar>(x+x_disp, y+y_disp);
-        
-        updateR(frame, x, y, n);
         updateR(frame, x+x_disp, y+y_disp, n);
-
     }
 }
 
@@ -211,7 +217,7 @@ Mat* PBAS::process(Mat* frame) {
         T = Mat::zeros(h, w, CV_32FC1);
         R = Mat::zeros(h, w, CV_32FC1);
 
-        init_Mat(T, R_lower);
+        init_Mat(T, T_lower);
         init_Mat(R, R_lower);
     }
 

@@ -6,8 +6,8 @@ using namespace std;
 using namespace cv;
 
 int main(int argc, char const *argv[]) {
-    VideoCapture cap("videos/salitona.mp4");
-    PBAS *pbas = new PBAS(20);
+    VideoCapture cap("videos/camera1.mp4");
+    PBAS *pbas = new PBAS();
 
     Mat frame;
     Mat gray;
@@ -23,7 +23,7 @@ int main(int argc, char const *argv[]) {
 
         cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
         mask = pbas->process(&gray);
-        imshow("Frame", frame);
+        imshow("Frame", gray);
         imshow("Mask", *mask);
         char c=(char)waitKey(25);
         if(c==27) break;
