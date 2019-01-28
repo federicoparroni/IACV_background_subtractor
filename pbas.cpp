@@ -69,7 +69,7 @@ float PBAS::distance(uint8_t a, uint8_t b) {
 }
 
 float PBAS::distance(uint8_t p, uint8_t p_grad, uint8_t g, uint8_t g_grad) {
-    return (this->alpha/this->I_m) * abs(p - g) + abs(p_grad - g_grad); 
+    return (this->alpha/this->I_m) * abs(p_grad - g_grad) + abs(p - g); 
 }
 
 Mat PBAS::gradient_magnitude(Mat* frame){
