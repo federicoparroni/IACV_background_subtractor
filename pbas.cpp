@@ -4,7 +4,10 @@
 #include <stdlib.h>
 #include <time.h>
 #include <utility>      
-#include <algorithm> 
+#include <algorithm>
+
+#include <chrono>
+using namespace std::chrono;
 
 using namespace std;
 
@@ -47,86 +50,104 @@ uint8_t PBAS::getPixel(uint8_t *data, int x, int y, int stride) {
 }
 uint8_t* PBAS::getPixelPtr(uint8_t *data, int x, int y, int stride) {
     return &data[x * stride + y];
-    //return data + (x * stride + y) * sizeof(uchar);
+    //return data + (x * stride + y) * sizeof(uint8_t);
 }
 
-
-float PBAS::distance(int a, int b) {
+float PBAS::distance(uint8_t a, uint8_t b) {
     return abs(a-b);
 }
 
-void PBAS::updateF(Mat* frame, int x, int y, int stride) {
+void PBAS::init_Mat(Mat matrix, float initial_value){
+    for(int i=0; i<h; i++){
+        for(int j=0; j<w; j++){
+            matrix.at<float>(i,j) = initial_value;
+        }
+    }
+}
 
-    //vector<Mat> B_copy(B);
-    //Mat R_copy = R.clone();
-
-    uint8_t* frameData = frame->data;
+Mat PBAS::process(const Mat frame) {
+    this->frame = frame;
+    this->w = frame.cols;
+    this->h = frame.rows;
     
-    uint8_t *Fdata = F.data;
-    int Fstep = F.step;
-    uint8_t *Rdata = R.data;
-    int Rstep = R.step;
+    // B, D, d_minavg initialization
+    if (B.size() == 0) {
+        for(int i=0; i<N; i++) {
+            Mat b_elem(h, w, CV_8UC1);
+            randu(b_elem, 0, 255);
+            //cout << (int)b_elem.at<uint8_t>(0,0) << endl;
+            B.push_back(b_elem);
 
+            Mat d_elem = Mat::zeros(h, w, CV_8UC1);
+            D.push_back(d_elem);
+        }
+        F = Mat::zeros(h, w, CV_8UC1);
+        d_minavg = Mat::zeros(h, w, CV_32FC1);
+        T = Mat::zeros(h, w, CV_32FC1);
+        R = Mat::zeros(h, w, CV_32FC1);
+
+        init_Mat(T, T_lower);
+        init_Mat(R, R_lower);
+    }
+
+    // auto start = high_resolution_clock::now();
+    // for(int x = 0; x < h; x++) {
+    //     for(int y = 0; y < w; y++)
+    //     {
+    //         updateF(frame, x,y,stride);
+    //         updateT(x, y);
+    //     }
+    // }
+    // auto stop = high_resolution_clock::now();
+    // auto duration = duration_cast<milliseconds>(stop - start);
+    // cout << duration.count() << "ms" << endl;
+
+    int channels = frame.channels();
+    int nCols = w * channels;
+    if (frame.isContinuous() && F.isContinuous() && R.isContinuous() && T.isContinuous()) {
+        nCols *= h;
+        h = 1;
+    }
+    auto start = high_resolution_clock::now();
+    for(int x=0; x < h; ++x) {
+        this->i = frame.ptr<uint8_t>(x);
+        this->q = F.ptr<uint8_t>(x);
+        this->r = R.ptr<float>(x);
+        this->t = T.ptr<float>(x);
+        for (int y=0; y < nCols; ++y) {
+            // f[y] is the pointer to the current pixel, r[y], t[y]
+            updateF(x, y);
+            updateT(x, y);
+        }
+    }
+    auto stop = high_resolution_clock::now();
+    auto duration = duration_cast<milliseconds>(stop - start);
+    cout << duration.count() << "ms" << endl;
+    
+    return F;
+}
+
+void PBAS::updateF(int x, int y) {
     //c = 0
     //while c < 3 or k >= self.K:
     int k = 0;       // number of lower-than-R distances for the channel 'c'
     int j = 0;
     while(j < N && k < K) {
-        uint8_t *Bdata = B[j].data;
-        int Bstep = B[j].step;
-        //if(distance(frame[x,y], B_copy[j,x,y]) < R_copy[x,y]) {
-        //cout << "Pixel: " << getPixel(frameData,x,y,stride) << endl;
-        
-        //if(distance(getPixel(frameData,x,y,stride), getPixel(B[j].data,x,y,Bstep)) < getPixel(Rdata,x,y,Rstep)) {
-        if(distance((int)frame->at<uchar>(x,y), (int)B[j].at<uchar>(x,y)) < R.at<float>(x,y)) {
+        if(distance(i[y], B[j].at<uint8_t>(x,y)) < r[y]) {
             k++;
         }
         j++;
     }
-    // check if at least K distances are less than R(x,y)
+    // check if at least K distances are less than R(x,y) => background pixel
     if(k >= K) {
-        //*getPixelPtr(Fdata, x,y,Fstep) = 0;
-        F.at<uint8_t>(x,y) = 0;
-        updateB(frame, x, y);
+        q[y] = 0;
+        updateB(x, y);
     } else {
-        //*getPixelPtr(Fdata, x,y,Fstep) = 255;
-        F.at<uint8_t>(x,y) = 255;
+        q[y] = 255;
     }
 }
 
-void PBAS::updateR(Mat* frame, int x, int y, int n) {
-    // find dmin
-    int I = (int)frame->at<uchar>(x, y);
-    int d_min = 255;
-    int d_act = 0;
-    for (int i=0; i<N; i++){
-        d_act = distance(I, (int)B[i].at<uchar>(x, y));
-        if (d_act < d_min)
-            d_min = d_act;
-    }
-
-    // update Dk
-    D[n].at<uchar>(x, y) = d_min;
-
-    // find davg
-    int d_cum = 0;
-    for (int i=0; i<N; i++){
-        d_cum += (int)D[i].at<uchar>(x, y);
-    }
-    d_minavg.at<float>(x,y) = d_cum/float(N);
-    //cout << d_minavg.at<float>(x, y) << endl;
-
-    // update R
-    if (R.at<float>(x,y) > d_minavg.at<float>(x,y) * R_scale){
-        R.at<float>(x,y) = R.at<float>(x,y)*(1 - R_incdec);
-    } else {
-        R.at<float>(x,y) = R.at<float>(x,y)*(1 + R_incdec);
-    }
-    //cant got under R_lower
-    R.at<float>(x,y) = max((float)R_lower, R.at<float>(x,y));
-}
-
-void PBAS::updateB(Mat* frame, int x, int y){
+void PBAS::updateB(int x, int y) {
     int rand_numb, n, y_disp, x_disp;
     pair<int, int> disp;
     float update_p;
@@ -146,15 +167,13 @@ void PBAS::updateB(Mat* frame, int x, int y){
     // generate a number between 0 and 99
     rand_numb = rand() %100;
     // get the T[x,y]
-    update_p = (1/(T.at<float>(x,y)))*100;
+    update_p = 100 / t[y];
     n = rand() % N;
 
     if(rand_numb < update_p){
         //generate a random number between 0 and N-1
-        B[n].at<uchar>(x, y) = frame->at<uchar>(x, y);
-        //cout << (int)B[n].at<uchar>(x, y) << endl;
-        //cout << (int)frame->at<uchar>(x, y) << endl;
-        updateR(frame, x, y, n);
+        B[n].at<uint8_t>(x, y) = i[y];
+        updateR(x, y, n);
     }
     
     rand_numb = rand() %100;
@@ -170,69 +189,50 @@ void PBAS::updateB(Mat* frame, int x, int y){
             y_disp = disp.second;
         }
 
-        B[n].at<uchar>(x+x_disp, y+y_disp) = frame->at<uchar>(x+x_disp, y+y_disp);
-        updateR(frame, x+x_disp, y+y_disp, n);
+        B[n].at<uint8_t>(x+x_disp, y+y_disp) = frame.at<uint8_t>(x+x_disp, y+y_disp);
+        //TO-DO
+        //updateR(x+x_disp, y+y_disp, n);
     }
 }
 
-void PBAS::updateT(int x, int y){
+void PBAS::updateR(int x, int y, int n) {
+    // find dmin
+    uint8_t I = i[y];
+    int d_min = 255;
+    int d_act = 0;
+    for (int i=0; i<N; i++){
+        d_act = distance(I, (int)B[i].at<uint8_t>(x, y));
+        if (d_act < d_min)
+            d_min = d_act;
+    }
+
+    // update Dk
+    D[n].at<uint8_t>(x, y) = d_min;
+
+    // find davg
+    int d_cum = 0;
+    for (int i=0; i<N; i++){
+        d_cum += (int)D[i].at<uint8_t>(x, y);
+    }
+    d_minavg.at<float>(x,y) = d_cum/float(N);
+
+    // update R
+    if (r[y] > d_minavg.at<float>(x,y) * R_scale){
+        r[y] = r[y] * (1 - R_incdec);
+    } else {
+        r[y] = r[y] * (1 + R_incdec);
+    }
+    //cant got under R_lower
+    r[y] = max((float)R_lower, r[y]);
+}
+
+void PBAS::updateT(int x, int y) {
     float Tinc_over_dmin;
-    Tinc_over_dmin = T_inc/d_minavg.at<float>(x,y);
-    if((int)F.at<uchar>(x,y)==1)
-        T.at<float>(x,y) += Tinc_over_dmin;
+    Tinc_over_dmin = T_inc / d_minavg.at<float>(x,y);
+    if(q[y]==1)
+        q[y] += Tinc_over_dmin;
     else
-        T.at<float>(x,y) -= Tinc_over_dmin;
-    T.at<float>(x,y) = max((float)T_lower, T.at<float>(x,y));
-    T.at<float>(x,y) = min((float)T_upper, T.at<float>(x,y));   
+        q[y] -= Tinc_over_dmin;
+    q[y] = max((float)T_lower, t[y]);
+    q[y] = min((float)T_upper, t[y]);   
 }
-
-void PBAS::init_Mat(Mat matrix, float initial_value){
-    for(int i=0; i<h; i++){
-        for(int j=0; j<w; j++){
-            matrix.at<float>(i,j) = initial_value;
-        }
-    }
-}
-
-Mat* PBAS::process(Mat* frame) {
-    w = frame->cols;
-    h = frame->rows;
-    int stride = frame->step;
-    // data stores pixel values and can be used for fast access by pointer
-    uint8_t *frameData = frame->data;
-
-    // B, D, d_minavg initialization
-    if (B.size() == 0) {
-        for(int i=0; i<N; i++) {
-            Mat b_elem(h, w, CV_8UC1);
-            randu(b_elem, 0, 255);
-            //cout << (int)b_elem.at<uchar>(0,0) << endl;
-            B.push_back(b_elem);
-
-            Mat d_elem = Mat::zeros(h, w, CV_8UC1);
-            D.push_back(d_elem);
-        }
-        F = Mat::zeros(h, w, CV_8UC1);
-        d_minavg = Mat::zeros(h, w, CV_32FC1);
-        T = Mat::zeros(h, w, CV_32FC1);
-        R = Mat::zeros(h, w, CV_32FC1);
-
-        init_Mat(T, T_lower);
-        init_Mat(R, R_lower);
-    }
-
-    for(int x = 0; x < h; x++)
-        for(int y = 0; y < w; y++)
-        {
-            updateF(frame, x,y,stride);
-            updateT(x, y);
-            //cout << x << endl;
-        }
-    
-    return &F;
-}
-
-// int main(int argc, char const *argv[]){
-//     PBAS* p = new PBAS();
-
-// }
