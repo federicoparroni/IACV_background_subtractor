@@ -22,6 +22,7 @@ PBAS::PBAS() {
     T_inc = 1;
     T_lower = 2;
     T_upper = 200;
+    init();
 }
 PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, float T_dec=0.05, int T_inc=1, int T_lower=2, int T_upper=200)
 {
@@ -34,23 +35,28 @@ PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, f
     this->T_inc = T_inc;
     this->T_lower = T_lower;
     this->T_upper = T_upper;
+    init();
+}
+void PBAS::init() {
+    displacement_vec.push_back(make_pair(-1, -1));
+    displacement_vec.push_back(make_pair(-1, 1));
+    displacement_vec.push_back(make_pair(-1, 0));
+    displacement_vec.push_back(make_pair(1, -1));
+    displacement_vec.push_back(make_pair(1, 1));
+    displacement_vec.push_back(make_pair(1, 0));
+    displacement_vec.push_back(make_pair(0, 1));
+    displacement_vec.push_back(make_pair(0, -1));
 }
 
 PBAS::~PBAS() {
+    frame.release();
     B.clear();
     R.release();
     D.clear();
     T.release();
     F.release();
     d_minavg.release();
-}
-
-uint8_t PBAS::getPixel(uint8_t *data, int x, int y, int stride) {
-    return data[x * stride + y];
-}
-uint8_t* PBAS::getPixelPtr(uint8_t *data, int x, int y, int stride) {
-    return &data[x * stride + y];
-    //return data + (x * stride + y) * sizeof(uint8_t);
+    displacement_vec.clear();
 }
 
 float PBAS::distance(uint8_t a, uint8_t b) {
@@ -65,7 +71,7 @@ void PBAS::init_Mat(Mat matrix, float initial_value){
     }
 }
 
-Mat PBAS::process(const Mat frame) {
+Mat* PBAS::process(const Mat frame) {
     this->frame = frame;
     this->w = frame.cols;
     this->h = frame.rows;
@@ -88,6 +94,8 @@ Mat PBAS::process(const Mat frame) {
 
         init_Mat(T, T_lower);
         init_Mat(R, R_lower);
+
+        F.at<uint8_t>(0,0) = 101;
     }
 
     // auto start = high_resolution_clock::now();
@@ -103,37 +111,44 @@ Mat PBAS::process(const Mat frame) {
     // cout << duration.count() << "ms" << endl;
 
     int channels = frame.channels();
+    int nRows = this->h;
     int nCols = w * channels;
+    int y;
     if (frame.isContinuous() && F.isContinuous() && R.isContinuous() && T.isContinuous()) {
         nCols *= h;
-        h = 1;
+        nRows = 1;
     }
     auto start = high_resolution_clock::now();
-    for(int x=0; x < h; ++x) {
+    for(int x=0; x < nRows; ++x) {
         this->i = frame.ptr<uint8_t>(x);
         this->q = F.ptr<uint8_t>(x);
         this->r = R.ptr<float>(x);
         this->t = T.ptr<float>(x);
-        for (int y=0; y < nCols; ++y) {
+
+        cout << "F[0]: " << q[0] << endl;
+        for (int i_ptr=0; i_ptr < nCols; ++i_ptr) {
+            y = i_ptr % (channels * h);
             // f[y] is the pointer to the current pixel, r[y], t[y]
-            updateF(x, y);
-            updateT(x, y);
+            updateF(x, y, i_ptr);
+            updateT(x, y, i_ptr);
         }
     }
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
     cout << duration.count() << "ms" << endl;
     
-    return F;
+    return &F;
 }
 
-void PBAS::updateF(int x, int y) {
+void PBAS::updateF(int x, int y, int i_ptr) {
+    //cout << "UpdateF - " << x << " " << y << endl;
+
     //c = 0
     //while c < 3 or k >= self.K:
     int k = 0;       // number of lower-than-R distances for the channel 'c'
     int j = 0;
     while(j < N && k < K) {
-        if(distance(i[y], B[j].at<uint8_t>(x,y)) < r[y]) {
+        if(distance(i[i_ptr], B[j].at<uint8_t>(x,y)) < r[i_ptr]) {
             k++;
         }
         j++;
@@ -141,39 +156,30 @@ void PBAS::updateF(int x, int y) {
     // check if at least K distances are less than R(x,y) => background pixel
     if(k >= K) {
         q[y] = 0;
-        updateB(x, y);
+        updateB(x, y, i_ptr);
     } else {
         q[y] = 255;
     }
 }
 
-void PBAS::updateB(int x, int y) {
+void PBAS::updateB(int x, int y, int i_ptr) {
+    //cout << "UpdateB - " << x << " " << y << endl;
     int rand_numb, n, y_disp, x_disp;
     pair<int, int> disp;
     float update_p;
-    vector<pair<int, int> > displacement_vec;
-    
-    displacement_vec.push_back(make_pair(-1, -1));
-    displacement_vec.push_back(make_pair(-1, 1));
-    displacement_vec.push_back(make_pair(-1, 0));
-    displacement_vec.push_back(make_pair(1, -1));
-    displacement_vec.push_back(make_pair(1, 1));
-    displacement_vec.push_back(make_pair(1, 0));
-    displacement_vec.push_back(make_pair(0, 1));
-    displacement_vec.push_back(make_pair(0, -1));
 
     //initialize random seed
     srand (time(NULL));
     // generate a number between 0 and 99
     rand_numb = rand() %100;
     // get the T[x,y]
-    update_p = 100 / t[y];
+    update_p = 100 / t[i_ptr];
     n = rand() % N;
 
-    if(rand_numb < update_p){
+    if(rand_numb < update_p) {
         //generate a random number between 0 and N-1
-        B[n].at<uint8_t>(x, y) = i[y];
-        updateR(x, y, n);
+        B[n].at<uint8_t>(x, y) = i[i_ptr];
+        updateR(x, y, n, i_ptr);
     }
     
     rand_numb = rand() %100;
@@ -182,7 +188,7 @@ void PBAS::updateB(int x, int y) {
         y_disp = 0;
         x_disp = 0;
 
-        while((x_disp == 0 && y_disp == 0)||x+x_disp>=h||y+y_disp>=w){
+        while((x_disp == 0 && y_disp == 0) || x+x_disp >= h || y+y_disp >= w){
             rand_numb = rand() %8;
             disp = displacement_vec[rand_numb];
             x_disp = disp.first;
@@ -190,18 +196,20 @@ void PBAS::updateB(int x, int y) {
         }
 
         B[n].at<uint8_t>(x+x_disp, y+y_disp) = frame.at<uint8_t>(x+x_disp, y+y_disp);
-        //TO-DO
-        //updateR(x+x_disp, y+y_disp, n);
+        
+        updateR_notoptimized(x+x_disp, y+y_disp, n);
     }
 }
 
-void PBAS::updateR(int x, int y, int n) {
+void PBAS::updateR(int x, int y, int n, int i_ptr) {
+    //cout << "UpdateR - " << x << " " << y << endl;
+
     // find dmin
-    uint8_t I = i[y];
+    uint8_t I = i[i_ptr];
     int d_min = 255;
     int d_act = 0;
     for (int i=0; i<N; i++){
-        d_act = distance(I, (int)B[i].at<uint8_t>(x, y));
+        d_act = distance(I, B[i].at<uint8_t>(x, y));
         if (d_act < d_min)
             d_min = d_act;
     }
@@ -210,29 +218,62 @@ void PBAS::updateR(int x, int y, int n) {
     D[n].at<uint8_t>(x, y) = d_min;
 
     // find davg
-    int d_cum = 0;
+    unsigned int d_cum = 0;
     for (int i=0; i<N; i++){
         d_cum += (int)D[i].at<uint8_t>(x, y);
     }
     d_minavg.at<float>(x,y) = d_cum/float(N);
 
     // update R
-    if (r[y] > d_minavg.at<float>(x,y) * R_scale){
-        r[y] = r[y] * (1 - R_incdec);
+    if (r[i_ptr] > d_minavg.at<float>(x,y) * R_scale){
+        r[i_ptr] = r[i_ptr] * (1 - R_incdec);
     } else {
-        r[y] = r[y] * (1 + R_incdec);
+        r[i_ptr] = r[i_ptr] * (1 + R_incdec);
     }
     //cant got under R_lower
-    r[y] = max((float)R_lower, r[y]);
+    r[i_ptr] = max((float)R_lower, r[i_ptr]);
 }
 
-void PBAS::updateT(int x, int y) {
+void PBAS::updateR_notoptimized(int x, int y, int n) {
+    // find dmin
+    uint8_t I = frame.at<uint8_t>(x, y);
+    int d_min = 255;
+    int d_act = 0;
+    for (int i=0; i<N; i++){
+        d_act = distance(I, (int)B[i].at<uchar>(x, y));
+        if (d_act < d_min)
+            d_min = d_act;
+    }
+
+    // update Dk
+    D[n].at<uchar>(x, y) = d_min;
+
+    // find davg
+    int d_cum = 0;
+    for (int i=0; i<N; i++){
+        d_cum += (int)D[i].at<uchar>(x, y);
+    }
+    d_minavg.at<float>(x,y) = d_cum/float(N);
+
+    // update R
+    if (R.at<float>(x,y) > d_minavg.at<float>(x,y) * R_scale){
+        R.at<float>(x,y) = R.at<float>(x,y)*(1 - R_incdec);
+    } else {
+        R.at<float>(x,y) = R.at<float>(x,y)*(1 + R_incdec);
+    }
+    //cant got under R_lower
+    R.at<float>(x,y) = max((float)R_lower, R.at<float>(x,y));
+}
+
+void PBAS::updateT(int x, int y, int i_ptr) {
+    //cout << "UpdateT - " << x << " " << y << endl;
+
     float Tinc_over_dmin;
     Tinc_over_dmin = T_inc / d_minavg.at<float>(x,y);
-    if(q[y]==1)
-        q[y] += Tinc_over_dmin;
+    if(q[i_ptr]==1)
+        q[i_ptr] += Tinc_over_dmin;
     else
-        q[y] -= Tinc_over_dmin;
-    q[y] = max((float)T_lower, t[y]);
-    q[y] = min((float)T_upper, t[y]);   
+        q[i_ptr] -= Tinc_over_dmin;
+    q[i_ptr] = max((float)T_lower, t[i_ptr]);
+    q[i_ptr] = min((float)T_upper, t[i_ptr]);
 }

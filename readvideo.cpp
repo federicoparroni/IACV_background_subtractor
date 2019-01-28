@@ -11,7 +11,7 @@ int main(int argc, char const *argv[]) {
 
     Mat frame;
     Mat gray;
-    Mat mask;
+    Mat* mask;
 
     if(!cap.isOpened()){
         cout << "Error opening video stream or file" << endl;
@@ -24,7 +24,7 @@ int main(int argc, char const *argv[]) {
         cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
         mask = pbas->process(gray);
         imshow("Frame", gray);
-        imshow("Mask", mask);
+        imshow("Mask", *mask);
         char c=(char)waitKey(25);
         if(c==27) break;
     }
