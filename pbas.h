@@ -16,11 +16,15 @@ class PBAS
         int T_inc;
         int T_lower;
         int T_upper;
+        int alpha;
+        float I_m;
 
         Mat frame;
+        Mat frame_grad;
         int w;
         int h;
         vector<Mat> B;
+        vector<Mat> B_grad;
         Mat R;
         vector<Mat> D;
         Mat T;
@@ -43,9 +47,10 @@ class PBAS
         void updateR_notoptimized(int x, int y, int i_ptr);
         void updateT(int x, int y, int i_ptr);
         void init_Mat(Mat matrix, float initial_value);
+        Mat gradient_magnitude(Mat* frame);
     public:
         PBAS();
-        PBAS(int N, int K, float R_incdec, int R_lower, int R_scale, float T_dec, int T_inc, int T_lower, int T_upper);
+        PBAS(int N, int K, float R_incdec, int R_lower, int R_scale, float T_dec, int T_inc, int T_lower, int T_upper, int alpha);
         ~PBAS();
 
         Mat* process(const Mat frame);

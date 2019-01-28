@@ -22,9 +22,11 @@ PBAS::PBAS() {
     T_inc = 1;
     T_lower = 2;
     T_upper = 200;
+    alpha = 10;
+    I_m = 1.0;
     init();
 }
-PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, float T_dec=0.05, int T_inc=1, int T_lower=2, int T_upper=200)
+PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, float T_dec=0.05, int T_inc=1, int T_lower=2, int T_upper=200, int alpha = 10)
 {
     this->N = N;
     this->K = K;
@@ -35,8 +37,11 @@ PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, f
     this->T_inc = T_inc;
     this->T_lower = T_lower;
     this->T_upper = T_upper;
+    this->alpha = alpha;
+    this->I_m = 1.0;
     init();
 }
+
 void PBAS::init() {
     displacement_vec.push_back(make_pair(-1, -1));
     displacement_vec.push_back(make_pair(-1, 1));
@@ -63,6 +68,30 @@ float PBAS::distance(uint8_t a, uint8_t b) {
     return abs(a-b);
 }
 
+Mat PBAS::gradient_magnitude(Mat* frame){
+    Mat grad;
+    int scale = 1;
+    int delta = 0;
+    int ddepth = CV_16S;
+
+    // Generate grad_x and grad_y
+    Mat grad_x, grad_y;
+    Mat abs_grad_x, abs_grad_y;
+
+    // Gradient X
+    Sobel(*frame, grad_x, ddepth, 1, 0, 3, scale, delta, BORDER_DEFAULT );
+    convertScaleAbs( grad_x, abs_grad_x );
+
+    // Gradient Y
+    Sobel(*frame, grad_y, ddepth, 0, 1, 3, scale, delta, BORDER_DEFAULT );
+    convertScaleAbs( grad_y, abs_grad_y );
+
+    // Total Gradient (approximate)
+    addWeighted( abs_grad_x, 0.5, abs_grad_y, 0.5, 0, grad);
+
+    return grad;
+}
+
 void PBAS::init_Mat(Mat matrix, float initial_value){
     for(int i=0; i<h; i++){
         for(int j=0; j<w; j++){
@@ -75,7 +104,11 @@ Mat* PBAS::process(const Mat frame) {
     this->frame = frame;
     this->w = frame.cols;
     this->h = frame.rows;
-    
+
+    // gradients computation
+    this->frame_grad = gradient_magnitude(&this->frame);
+    this->I_m = mean(this->frame_grad).val[0];
+
     // B, D, d_minavg initialization
     if (B.size() == 0) {
         for(int i=0; i<N; i++) {
@@ -83,6 +116,11 @@ Mat* PBAS::process(const Mat frame) {
             randu(b_elem, 0, 255);
             //cout << (int)b_elem.at<uint8_t>(0,0) << endl;
             B.push_back(b_elem);
+
+            Mat b_grad_elem(h, w, CV_8UC1);
+            randu(b_grad_elem, 0, 255);
+            //cout << (int)b_elem.at<uint8_t>(0,0) << endl;
+            B_grad.push_back(b_grad_elem);
 
             Mat d_elem = Mat::zeros(h, w, CV_8UC1);
             D.push_back(d_elem);
