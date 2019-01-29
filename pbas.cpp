@@ -176,6 +176,7 @@ void PBAS::updateF(int x, int y, int i_ptr) {
     int j = 0;
     while(j < N && k < K) {
         if(distance(i[i_ptr], i_grad[i_ptr], B[j].at<uint8_t>(x,y), B_grad[j].at<uint8_t>(x,y)) < r[i_ptr]) {
+        // if(distance(i[i_ptr], B[j].at<uint8_t>(x,y)) < r[i_ptr]) {
             k++;
         }
         j++;
@@ -240,6 +241,7 @@ void PBAS::updateR(int x, int y, int n, int i_ptr) {
     int d_act = 0;
     for (int i=0; i<N; i++){
         d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<uint8_t>(x, y));
+        // d_act = distance(I, B[i].at<uint8_t>(x, y));
         if (d_act < d_min)
             d_min = d_act;
     }
@@ -272,6 +274,7 @@ void PBAS::updateR_notoptimized(int x, int y, int n) {
     int d_act = 0;
     for (int i=0; i<N; i++){
         d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<uint8_t>(x, y));
+        // d_act = distance(I, B[i].at<uint8_t>(x, y));
         if (d_act < d_min)
             d_min = d_act;
     }
