@@ -13,7 +13,7 @@ using namespace std;
 
 
 PBAS::PBAS() {
-    N = 30;
+    N = 12;
     K = 2;
     R_incdec = 0.05;
     R_lower = 18;
