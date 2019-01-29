@@ -14,7 +14,7 @@ using namespace std;
 
 PBAS::PBAS() {
     N = 30;
-    K = 2;
+    K = 4;
     R_incdec = 0.05;
     R_lower = 18;
     R_scale = 5;
@@ -69,7 +69,7 @@ float PBAS::distance(uint8_t a, uint8_t b) {
 }
 
 float PBAS::distance(uint8_t p, uint8_t p_grad, uint8_t g, uint8_t g_grad) {
-    return (this->alpha/this->I_m) * abs(p_grad - g_grad) + abs(p - g); 
+    return (this->alpha/this->I_m) * abs(p - g) + abs(p_grad - g_grad); 
 }
 
 Mat PBAS::gradient_magnitude(Mat* frame){
@@ -133,6 +133,9 @@ Mat* PBAS::process(const Mat frame) {
         d_minavg = Mat::zeros(h, w, CV_32FC1);
         T = Mat::zeros(h, w, CV_32FC1);
         R = Mat::zeros(h, w, CV_32FC1);
+        
+        //initialize the median with the first frame
+        median = frame.clone();
 
         init_Mat(T, T_lower);
         init_Mat(R, R_lower);
@@ -153,9 +156,11 @@ Mat* PBAS::process(const Mat frame) {
         this->q = F.ptr<uint8_t>(x);
         this->r = R.ptr<float>(x);
         this->t = T.ptr<float>(x);
+        this->med = median.ptr<uint8_t>(x);
 
         for (int i_ptr=0; i_ptr < nCols; ++i_ptr) {
             //y = i_ptr % (channels * this->h);
+            updateMedian(i_ptr);
             updateF(x, i_ptr, i_ptr);
             updateT(x, i_ptr, i_ptr);
         }
@@ -164,7 +169,8 @@ Mat* PBAS::process(const Mat frame) {
     auto duration = duration_cast<milliseconds>(stop - start);
     cout << duration.count() << "ms" << endl;
     
-    return &F;
+    //return &F;
+    return &median;
 }
 
 void PBAS::updateF(int x, int y, int i_ptr) {
@@ -175,8 +181,8 @@ void PBAS::updateF(int x, int y, int i_ptr) {
     int k = 0;       // number of lower-than-R distances for the channel 'c'
     int j = 0;
     while(j < N && k < K) {
-        if(distance(i[i_ptr], i_grad[i_ptr], B[j].at<uint8_t>(x,y), B_grad[j].at<uint8_t>(x,y)) < r[i_ptr]) {
-        // if(distance(i[i_ptr], B[j].at<uint8_t>(x,y)) < r[i_ptr]) {
+        //if(distance(i[i_ptr], i_grad[i_ptr], B[j].at<uint8_t>(x,y), B_grad[j].at<uint8_t>(x,y)) < r[i_ptr]) {
+        if(distance(i[i_ptr], B[j].at<uint8_t>(x,y)) < r[i_ptr]) {
             k++;
         }
         j++;
@@ -225,7 +231,6 @@ void PBAS::updateB(int x, int y, int i_ptr) {
         }
 
         B[n].at<uint8_t>(x+x_disp, y+y_disp) = frame.at<uint8_t>(x+x_disp, y+y_disp);
-        B_grad[n].at<uint8_t>(x+x_disp, y+y_disp) = frame_grad.at<uint8_t>(x+x_disp, y+y_disp);
         
         updateR_notoptimized(x+x_disp, y+y_disp, n);
     }
@@ -240,8 +245,8 @@ void PBAS::updateR(int x, int y, int n, int i_ptr) {
     int d_min = 255;
     int d_act = 0;
     for (int i=0; i<N; i++){
-        d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<uint8_t>(x, y));
-        // d_act = distance(I, B[i].at<uint8_t>(x, y));
+        //d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<uint8_t>(x, y));
+        d_act = distance(I, B[i].at<uint8_t>(x, y));
         if (d_act < d_min)
             d_min = d_act;
     }
@@ -273,8 +278,8 @@ void PBAS::updateR_notoptimized(int x, int y, int n) {
     int d_min = 255;
     int d_act = 0;
     for (int i=0; i<N; i++){
-        d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<uint8_t>(x, y));
-        // d_act = distance(I, B[i].at<uint8_t>(x, y));
+        //d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<uint8_t>(x, y));
+        d_act = distance(I, B[i].at<uint8_t>(x, y));
         if (d_act < d_min)
             d_min = d_act;
     }
@@ -311,3 +316,16 @@ void PBAS::updateT(int x, int y, int i_ptr) {
     t[i_ptr] = max((float)T_lower, t[i_ptr]);
     t[i_ptr] = min((float)T_upper, t[i_ptr]);
 }
+
+void PBAS::updateMedian(int col){
+    uint8_t med_pixel = this->med[col];
+    uint8_t frame_pixel = this->i[col];
+    if(med_pixel != frame_pixel){
+        if(med_pixel > frame_pixel){
+            this->med[col] --;
+        }else{
+            this->med[col] ++;
+        }
+    }
+}
+
