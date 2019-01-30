@@ -175,8 +175,8 @@ Mat* PBAS::process(const Mat frame) {
     auto duration = duration_cast<milliseconds>(stop - start);
     cout << duration.count() << "ms" << endl;
     
-    //return &F;
-    return &median;
+    return &F;
+    // return &median;
 }
 
 void PBAS::updateF(int x, int y, int i_ptr) {
@@ -230,7 +230,7 @@ void PBAS::updateB(int x, int y, int i_ptr) {
         y_disp = 0;
         x_disp = 0;
 
-        while((x_disp == 0 && y_disp == 0) || x+x_disp >= h || y+y_disp >= w){
+        while((x_disp == 0 && y_disp == 0) || x+x_disp >= h || y+y_disp >= w || x+x_disp < 0 || y+y_disp < 0){
             rand_numb = rand() %8;
             disp = displacement_vec[rand_numb];
             x_disp = disp.first;
