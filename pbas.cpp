@@ -15,7 +15,7 @@ using namespace std;
 
 PBAS::PBAS() {
     N = 30;
-    K = 4;
+    K = 2;
     R_incdec = 0.05;
     R_lower = 18;
     R_scale = 5;
@@ -25,6 +25,10 @@ PBAS::PBAS() {
     T_upper = 200;
     alpha = 10;
     I_m = 1.0;
+    ALPHA = 0.1;
+    BETA = 0.9;
+    TAU_H = 80;
+    TAU_S = 20;
     init();
 }
 PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, float T_dec=0.05, int T_inc=1, int T_lower=2, int T_upper=200, int alpha = 10)
@@ -73,7 +77,7 @@ float PBAS::distance(uint8_t a, uint8_t b) {
 }
 
 float PBAS::distance(uint8_t p, uint8_t p_grad, uint8_t g, uint8_t g_grad) {
-    return (this->alpha/this->I_m) * abs(p - g) + abs(p_grad - g_grad); 
+    return (this->alpha/this->I_m) * abs(p_grad - g_grad) + abs(p - g); 
 }
 
 Mat PBAS::gradient_magnitude(Mat* frame){
@@ -174,10 +178,10 @@ Mat* PBAS::process(const Mat* frame) {
     }
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
+    medianBlur(F,F,9);
     cout << duration.count() << "ms" << endl;
     
-    //return &F;
-    return &median;
+    return &F;
 }
 
 void PBAS::updateF(int x, int y, int i_ptr) {
@@ -186,8 +190,7 @@ void PBAS::updateF(int x, int y, int i_ptr) {
     int k = 0;       // number of lower-than-R distances for the channel 'c'
     int j = 0;
     while(j < N && k < K) {
-        //if(distance(i[i_ptr], i_grad[i_ptr], B[j].at<uint8_t>(x,y), B_grad[j].at<uint8_t>(x,y)) < r[i_ptr]) {
-        if(distance(i[i_ptr], B[j].at<uint8_t>(x,y)) < r[i_ptr]) {
+        if(distance(i[i_ptr], i_grad[i_ptr], B[j].at<uint8_t>(x,y), B_grad[j].at<uint8_t>(x,y)) < r[i_ptr]) {
             k++;
         }
         j++;
@@ -197,8 +200,9 @@ void PBAS::updateF(int x, int y, int i_ptr) {
         q[i_ptr] = 0;
         updateB(x, y, i_ptr);
     } else {
-        //is_shadow(i_ptr);
-        q[i_ptr] = 255;
+        if(!is_shadow(i_ptr)) q[i_ptr] = 255;
+        else q[i_ptr] = 0;
+        //q[i_ptr] = 255;
     }
 }
 
@@ -236,6 +240,7 @@ void PBAS::updateB(int x, int y, int i_ptr) {
         }
 
         B[n].at<uint8_t>(x+x_disp, y+y_disp) = frame.at<uint8_t>(x+x_disp, y+y_disp);
+        B_grad[n].at<uint8_t>(x+x_disp, y+y_disp) = frame_grad.at<uint8_t>(x+x_disp, y+y_disp);
         
         updateR_notoptimized(x+x_disp, y+y_disp, n);
     }
@@ -248,8 +253,7 @@ void PBAS::updateR(int x, int y, int n, int i_ptr) {
     int d_min = 255;
     int d_act = 0;
     for (int i=0; i<N; i++){
-        //d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<uint8_t>(x, y));
-        d_act = distance(I, B[i].at<uint8_t>(x, y));
+        d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<uint8_t>(x, y));
         if (d_act < d_min)
             d_min = d_act;
     }
@@ -281,8 +285,7 @@ void PBAS::updateR_notoptimized(int x, int y, int n) {
     int d_min = 255;
     int d_act = 0;
     for (int i=0; i<N; i++){
-        //d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<uint8_t>(x, y));
-        d_act = distance(I, B[i].at<uint8_t>(x, y));
+        d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<uint8_t>(x, y));
         if (d_act < d_min)
             d_min = d_act;
     }
@@ -332,13 +335,39 @@ void PBAS::updateMedian(int col){
     }
 }
 
-void PBAS::is_shadow(int col){
-    Mat i_hsv(Size(1,1),CV_8UC1);
-    Mat m_hsv(Size(1,1),CV_8UC1);
+int PBAS::is_shadow(int col){
+    //cout<< "rgb" << this->i_rgb[col] <<endl;
+    Vec3b frame_rgb_pixel = i_rgb[col];
+    Vec3b median_rgb_pixel = med[col];
+    Mat med_pixel(1,1,CV_8UC3, &median_rgb_pixel);
+    Mat rgb_pixel(1,1,CV_8UC3, &frame_rgb_pixel);
+    Mat frame_hsv_pixel_mat;
+    Mat median_hsv_pixel_mat;
+    cvtColor(rgb_pixel, frame_hsv_pixel_mat, cv::COLOR_RGB2HSV);
+    cvtColor(med_pixel, median_hsv_pixel_mat, cv::COLOR_RGB2HSV);
+    //cout<< i_hsv.at<Vec3b>(0,0) <<endl;
+    Vec3b median_hsv_pixel = median_hsv_pixel_mat.at<Vec3b>(0,0);
+    Vec3b frame_hsv_pixel = frame_hsv_pixel_mat.at<Vec3b>(0,0);
 
-    cvtColor(this->i_rgb[col], i_hsv, cv::COLOR_RGB2HSV);
-    cvtColor(this->med[col], m_hsv, cv::COLOR_RGB2HSV);
-    int a=4;
+    uint8_t h_m = median_hsv_pixel[0];
+    uint8_t s_m = median_hsv_pixel[1];
+    uint8_t v_m = median_hsv_pixel[2]==0?1:median_hsv_pixel[2];
+
+    uint8_t h_f = frame_hsv_pixel[0];
+    uint8_t s_f = frame_hsv_pixel[1];
+    uint8_t v_f = frame_hsv_pixel[2];
+
+    //cout<< "TAU_H " << abs(h_m-h_f) <<endl;
+    //cout<< "TAU_S " << abs(s_m-s_f) <<endl;
+    //cout<< "V " << float(v_f/v_m) <<endl;
+    
+    if(abs(h_m-h_f)<TAU_H && abs(s_m-s_f)<TAU_S && ALPHA<=(float)v_f/v_m && (float)v_f/v_m<=BETA){
+        return 1;
+        //cout<< "TAU_H " << abs(h_m-h_f) <<endl;
+        //cout<< "TAU_S " << abs(s_m-s_f) <<endl;
+        //cout<< "V " << float(v_f/v_m) <<endl;
+    }
+    return 0;
 }
 
 
