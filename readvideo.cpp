@@ -6,7 +6,9 @@ using namespace std;
 using namespace cv;
 
 int main(int argc, char const *argv[]) {
-    VideoCapture cap("videos/salitona.mp4");
+    string filename = "videos/camera1.mp4";
+    if(argc == 2) filename = argv[1];
+    VideoCapture cap(filename);
     PBAS *pbas = new PBAS();
 
     Mat frame;
