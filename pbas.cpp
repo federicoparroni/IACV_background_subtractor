@@ -25,6 +25,10 @@ PBAS::PBAS() {
     T_upper = 200;
     alpha = 10;
     I_m = 1.0;
+    ALPHA = 0.2;
+    BETA = 0.4;
+    TAU_H = 0.6;
+    TAU_S = 0.4;
     init();
 }
 PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, float T_dec=0.05, int T_inc=1, int T_lower=2, int T_upper=200, int alpha = 10)
@@ -162,7 +166,7 @@ Mat* PBAS::process(const Mat frame) {
         this->r = R.ptr<float>(x);
         this->t = T.ptr<float>(x);
         this->med = median.ptr<uint8_t>(x);
-        this->i_rgb = this->frame_rgb.ptr<uint8_t>(x);
+        this->i_rgb = this->frame_rgb.ptr<Vec3b>(x);
 
         for (int i_ptr=0; i_ptr < nCols; ++i_ptr) {
             //y = i_ptr % (channels * this->h);
@@ -198,8 +202,7 @@ void PBAS::updateF(int x, int y, int i_ptr) {
         q[i_ptr] = 0;
         updateB(x, y, i_ptr);
     } else {
-        //is_shadow(i_ptr);
-        q[i_ptr] = 255;
+        if(!is_shadow(i_ptr)) q[i_ptr] = 255;
     }
 }
 
@@ -336,13 +339,32 @@ void PBAS::updateMedian(int col){
     }
 }
 
-void PBAS::is_shadow(int col){
-    Mat i_hsv(Size(1,1),CV_8UC1);
-    Mat m_hsv(Size(1,1),CV_8UC1);
+int PBAS::is_shadow(int col){
+    cout<< "rgb" << this->i_rgb[col] <<endl;
+    Vec3b frame_rgb_pixel = i_rgb[col];
+    Vec3b median_rgb_pixel = med[col];
+    Mat med_pixel(1,1,CV_8UC3, &median_rgb_pixel);
+    Mat rgb_pixel(1,1,CV_8UC3, &frame_rgb_pixel);
+    Mat frame_hsv_pixel_mat;
+    Mat median_hsv_pixel_mat;
+    cvtColor(rgb_pixel, frame_hsv_pixel_mat, cv::COLOR_RGB2HSV);
+    cvtColor(med_pixel, median_hsv_pixel_mat, cv::COLOR_RGB2HSV);
+    //cout<< i_hsv.at<Vec3b>(0,0) <<endl;
+    Vec3b median_hsv_pixel = median_hsv_pixel_mat.at<Vec3b>(0,0);
+    Vec3b frame_hsv_pixel = frame_hsv_pixel_mat.at<Vec3b>(0,0);
 
-    cvtColor(this->i_rgb[col], i_hsv, cv::COLOR_RGB2HSV);
-    cvtColor(this->med[col], m_hsv, cv::COLOR_RGB2HSV);
-    int a=4;
+    uint8_t h_m = median_hsv_pixel[0];
+    uint8_t s_m = median_hsv_pixel[1];
+    uint8_t v_m = median_hsv_pixel[2];
+
+    uint8_t h_f = frame_hsv_pixel[0];
+    uint8_t s_f = frame_hsv_pixel[1];
+    uint8_t v_f = frame_hsv_pixel[2];
+
+    if(abs(h_m-h_f)<TAU_H && abs(s_m-s_f)<TAU_S && ALPHA<=float(v_f/v_m) && float(v_f/v_m)<=BETA){
+        return 1;
+    }
+    return 0;
 }
 
 
