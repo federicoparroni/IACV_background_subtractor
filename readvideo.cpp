@@ -10,7 +10,6 @@ int main(int argc, char const *argv[]) {
     PBAS *pbas = new PBAS();
 
     Mat frame;
-    Mat gray;
     Mat* mask;
 
     if(!cap.isOpened()){
@@ -21,9 +20,8 @@ int main(int argc, char const *argv[]) {
         cap >> frame;
         if (frame.empty()) break;
 
-        cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
-        mask = pbas->process(&gray);
-        imshow("Frame", gray);
+        mask = pbas->process(&frame);
+        imshow("Frame", frame);
         moveWindow("Frame", 120,20);
         imshow("Mask", *mask);
         moveWindow("Mask", 490,20);
