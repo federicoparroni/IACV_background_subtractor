@@ -25,10 +25,10 @@ PBAS::PBAS() {
     T_upper = 200;
     alpha = 10;
     I_m = 1.0;
-    ALPHA = 0.2;
-    BETA = 0.4;
-    TAU_H = 0.6;
-    TAU_S = 0.4;
+    ALPHA = 0.6;
+    BETA = 0.8;
+    TAU_H = 80;
+    TAU_S = 20;
     init();
 }
 PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, float T_dec=0.05, int T_inc=1, int T_lower=2, int T_upper=200, int alpha = 10)
@@ -199,6 +199,8 @@ void PBAS::updateF(int x, int y, int i_ptr) {
         updateB(x, y, i_ptr);
     } else {
         if(!is_shadow(i_ptr)) q[i_ptr] = 255;
+        else q[i_ptr] = 0;
+        //q[i_ptr] = 255;
     }
 }
 
@@ -347,14 +349,21 @@ int PBAS::is_shadow(int col){
 
     uint8_t h_m = median_hsv_pixel[0];
     uint8_t s_m = median_hsv_pixel[1];
-    uint8_t v_m = median_hsv_pixel[2];
+    uint8_t v_m = median_hsv_pixel[2]==0?1:median_hsv_pixel[2];
 
     uint8_t h_f = frame_hsv_pixel[0];
     uint8_t s_f = frame_hsv_pixel[1];
     uint8_t v_f = frame_hsv_pixel[2];
 
-    if(abs(h_m-h_f)<TAU_H && abs(s_m-s_f)<TAU_S && ALPHA<=float(v_f/v_m) && float(v_f/v_m)<=BETA){
+    //cout<< "TAU_H " << abs(h_m-h_f) <<endl;
+    //cout<< "TAU_S " << abs(s_m-s_f) <<endl;
+    //cout<< "V " << float(v_f/v_m) <<endl;
+    
+    if(abs(h_m-h_f)<TAU_H && abs(s_m-s_f)<TAU_S && ALPHA<=(float)v_f/v_m && (float)v_f/v_m<=BETA){
         return 1;
+        //cout<< "TAU_H " << abs(h_m-h_f) <<endl;
+        //cout<< "TAU_S " << abs(s_m-s_f) <<endl;
+        //cout<< "V " << float(v_f/v_m) <<endl;
     }
     return 0;
 }
