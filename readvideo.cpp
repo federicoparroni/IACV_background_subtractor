@@ -22,9 +22,11 @@ int main(int argc, char const *argv[]) {
         if (frame.empty()) break;
 
         cvtColor(frame, gray, cv::COLOR_RGB2GRAY);
-        mask = pbas->process(gray);
+        mask = pbas->process(&gray);
         imshow("Frame", gray);
+        moveWindow("Frame", 120,20);
         imshow("Mask", *mask);
+        moveWindow("Mask", 490,20);
         char c=(char)waitKey(25);
         if(c==27) break;
     }

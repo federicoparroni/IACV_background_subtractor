@@ -19,6 +19,7 @@ class PBAS
         int alpha;
         float I_m;
 
+        Mat median;
         Mat frame;
         Mat frame_grad;
         int w;
@@ -37,24 +38,26 @@ class PBAS
         uint8_t *q;
         float *r;
         float *t;
+        uint8_t *med;
 
         void init();
 
         float distance(uint8_t, uint8_t);
         float distance(uint8_t p, uint8_t p_grad, uint8_t g, uint8_t g_grad);
 
+        void updateMedian(int col);
         void updateF(int x, int y, int i_ptr);
         void updateB(int x, int y, int i_ptr);
         void updateR(int x, int y, int n, int i_ptr);
         void updateR_notoptimized(int x, int y, int i_ptr);
         void updateT(int x, int y, int i_ptr);
-        void init_Mat(Mat matrix, float initial_value);
+        void init_Mat(Mat* matrix, float initial_value);
         Mat gradient_magnitude(Mat* frame);
     public:
         PBAS();
         PBAS(int N, int K, float R_incdec, int R_lower, int R_scale, float T_dec, int T_inc, int T_lower, int T_upper, int alpha);
         ~PBAS();
 
-        Mat* process(const Mat frame);
+        Mat* process(const Mat* frame);
 
 };
