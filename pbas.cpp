@@ -5,6 +5,7 @@
 #include <time.h>
 #include <utility>      
 #include <algorithm>
+#include <opencv2/opencv.hpp>
 
 #include <chrono>
 using namespace std::chrono;
@@ -105,9 +106,13 @@ void PBAS::init_Mat(Mat matrix, float initial_value){
 }
 
 Mat* PBAS::process(const Mat frame) {
-    this->frame = frame;
-    this->w = frame.cols;
-    this->h = frame.rows;
+    //convert the frame in rgb and store it in the class variable this->frame
+    cvtColor(frame, this->frame, cv::COLOR_RGB2GRAY);
+    //assign to the class variable the rgb frame
+    this-> frame_rgb = frame;
+    
+    this->w = this->frame.cols;
+    this->h = this->frame.rows;
 
     // gradients computation
     this->frame_grad = gradient_magnitude(&this->frame);
@@ -135,13 +140,13 @@ Mat* PBAS::process(const Mat frame) {
         R = Mat::zeros(h, w, CV_32FC1);
         
         //initialize the median with the first frame
-        median = frame.clone();
+        median = this->frame.clone();
 
         init_Mat(T, T_lower);
         init_Mat(R, R_lower);
     }
 
-    int channels = frame.channels();
+    int channels = this->frame.channels();
     int nRows = this->h;
     int nCols = w * channels;
     // int y;
@@ -151,12 +156,13 @@ Mat* PBAS::process(const Mat frame) {
     // }
     auto start = high_resolution_clock::now();
     for(int x=0; x < nRows; ++x) {
-        this->i = frame.ptr<uint8_t>(x);
+        this->i = this->frame.ptr<uint8_t>(x);
         this->i_grad = frame_grad.ptr<uint8_t>(x);
         this->q = F.ptr<uint8_t>(x);
         this->r = R.ptr<float>(x);
         this->t = T.ptr<float>(x);
         this->med = median.ptr<uint8_t>(x);
+        this->i_rgb = this->frame_rgb.ptr<uint8_t>(x);
 
         for (int i_ptr=0; i_ptr < nCols; ++i_ptr) {
             //y = i_ptr % (channels * this->h);
@@ -192,6 +198,7 @@ void PBAS::updateF(int x, int y, int i_ptr) {
         q[i_ptr] = 0;
         updateB(x, y, i_ptr);
     } else {
+        //is_shadow(i_ptr);
         q[i_ptr] = 255;
     }
 }
@@ -328,4 +335,15 @@ void PBAS::updateMedian(int col){
         }
     }
 }
+
+void PBAS::is_shadow(int col){
+    Mat i_hsv(Size(1,1),CV_8UC1);
+    Mat m_hsv(Size(1,1),CV_8UC1);
+
+    cvtColor(this->i_rgb[col], i_hsv, cv::COLOR_RGB2HSV);
+    cvtColor(this->med[col], m_hsv, cv::COLOR_RGB2HSV);
+    int a=4;
+}
+
+
 
