@@ -25,8 +25,8 @@ PBAS::PBAS() {
     T_upper = 200;
     alpha = 10;
     I_m = 1.0;
-    ALPHA = 0.6;
-    BETA = 0.8;
+    ALPHA = 0.1;
+    BETA = 0.9;
     TAU_H = 80;
     TAU_S = 20;
     init();
@@ -177,6 +177,7 @@ Mat* PBAS::process(const Mat* frame) {
     }
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
+    medianBlur(F,F,9);
     cout << duration.count() << "ms" << endl;
     
     return &F;
