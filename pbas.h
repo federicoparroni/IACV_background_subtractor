@@ -35,7 +35,7 @@ class PBAS
         vector<pair<int,int>> displacement_vec;
 
         const uint8_t *i;
-        const uint8_t *i_rgb;
+        const Vec3b *i_rgb;
         const uint8_t *i_grad;
         uint8_t *q;
         float *r;

@@ -140,7 +140,7 @@ Mat* PBAS::process(const Mat* frame) {
         R = Mat::zeros(h, w, CV_32FC1);
         
         //initialize the median with the first frame
-        median = this->frame.clone();
+        median = frame->clone();
 
         init_Mat(&T, T_lower);
         init_Mat(&R, R_lower);
@@ -162,7 +162,7 @@ Mat* PBAS::process(const Mat* frame) {
         this->r = R.ptr<float>(x);
         this->t = T.ptr<float>(x);
         this->med = median.ptr<Vec3b>(x);
-        this->i_rgb = this->frame_rgb.ptr<uint8_t>(x);
+        this->i_rgb = this->frame_rgb.ptr<Vec3b>(x);
 
         for (int i_ptr=0; i_ptr < nCols; ++i_ptr) {
             //y = i_ptr % (channels * this->h);
@@ -175,8 +175,8 @@ Mat* PBAS::process(const Mat* frame) {
     auto duration = duration_cast<milliseconds>(stop - start);
     cout << duration.count() << "ms" << endl;
     
-    return &F;
-    // return &median;
+    //return &F;
+    return &median;
 }
 
 void PBAS::updateF(int x, int y, int i_ptr) {
