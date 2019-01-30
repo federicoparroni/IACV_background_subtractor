@@ -169,8 +169,8 @@ Mat* PBAS::process(const Mat frame) {
     auto duration = duration_cast<milliseconds>(stop - start);
     cout << duration.count() << "ms" << endl;
     
-    //return &F;
-    return &median;
+    return &F;
+    // return &median;
 }
 
 void PBAS::updateF(int x, int y, int i_ptr) {
