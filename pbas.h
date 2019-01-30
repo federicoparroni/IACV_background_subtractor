@@ -21,6 +21,7 @@ class PBAS
 
         Mat median;
         Mat frame;
+        Mat frame_rgb;
         Mat frame_grad;
         int w;
         int h;
@@ -34,11 +35,12 @@ class PBAS
         vector<pair<int,int>> displacement_vec;
 
         const uint8_t *i;
+        const Vec3b *i_rgb;
         const uint8_t *i_grad;
         uint8_t *q;
         float *r;
         float *t;
-        uint8_t *med;
+        Vec3b *med;
 
         void init();
 
@@ -51,13 +53,14 @@ class PBAS
         void updateR(int x, int y, int n, int i_ptr);
         void updateR_notoptimized(int x, int y, int i_ptr);
         void updateT(int x, int y, int i_ptr);
-        void init_Mat(Mat matrix, float initial_value);
+        void init_Mat(Mat* matrix, float initial_value);
         Mat gradient_magnitude(Mat* frame);
+        void is_shadow(int col);
     public:
         PBAS();
         PBAS(int N, int K, float R_incdec, int R_lower, int R_scale, float T_dec, int T_inc, int T_lower, int T_upper, int alpha);
         ~PBAS();
 
-        Mat* process(const Mat frame);
+        Mat* process(const Mat* frame);
 
 };

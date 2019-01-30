@@ -5,6 +5,7 @@
 #include <time.h>
 #include <utility>      
 #include <algorithm>
+#include <opencv2/opencv.hpp>
 
 #include <chrono>
 using namespace std::chrono;
@@ -43,6 +44,7 @@ PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, f
 }
 
 void PBAS::init() {
+    // initialize displacement array
     displacement_vec.push_back(make_pair(-1, -1));
     displacement_vec.push_back(make_pair(-1, 1));
     displacement_vec.push_back(make_pair(-1, 0));
@@ -55,6 +57,8 @@ void PBAS::init() {
 
 PBAS::~PBAS() {
     frame.release();
+    frame_grad.release();
+    median.release();
     B.clear();
     R.release();
     D.clear();
@@ -96,18 +100,21 @@ Mat PBAS::gradient_magnitude(Mat* frame){
     return grad;
 }
 
-void PBAS::init_Mat(Mat matrix, float initial_value){
+void PBAS::init_Mat(Mat* matrix, float initial_value){
     for(int i=0; i<h; i++){
         for(int j=0; j<w; j++){
-            matrix.at<float>(i,j) = initial_value;
+            matrix->at<float>(i,j) = initial_value;
         }
     }
 }
 
-Mat* PBAS::process(const Mat frame) {
-    this->frame = frame;
-    this->w = frame.cols;
-    this->h = frame.rows;
+Mat* PBAS::process(const Mat* frame) {
+    //convert the frame in rgb and store it in the class variable this->frame
+    cvtColor(*frame, this->frame, cv::COLOR_RGB2GRAY);
+    //assign to the class variable the rgb frame
+    this->frame_rgb = *frame;
+    this->w = this->frame.cols;
+    this->h = this->frame.rows;
 
     // gradients computation
     this->frame_grad = gradient_magnitude(&this->frame);
@@ -118,12 +125,10 @@ Mat* PBAS::process(const Mat frame) {
         for(int i=0; i<N; i++) {
             Mat b_elem(h, w, CV_8UC1);
             randu(b_elem, 0, 255);
-            //cout << (int)b_elem.at<uint8_t>(0,0) << endl;
             B.push_back(b_elem);
 
             Mat b_grad_elem(h, w, CV_8UC1);
             randu(b_grad_elem, 0, 255);
-            //cout << (int)b_elem.at<uint8_t>(0,0) << endl;
             B_grad.push_back(b_grad_elem);
 
             Mat d_elem = Mat::zeros(h, w, CV_8UC1);
@@ -135,13 +140,13 @@ Mat* PBAS::process(const Mat frame) {
         R = Mat::zeros(h, w, CV_32FC1);
         
         //initialize the median with the first frame
-        median = frame.clone();
+        median = frame->clone();
 
-        init_Mat(T, T_lower);
-        init_Mat(R, R_lower);
+        init_Mat(&T, T_lower);
+        init_Mat(&R, R_lower);
     }
 
-    int channels = frame.channels();
+    int channels = this->frame.channels();
     int nRows = this->h;
     int nCols = w * channels;
     // int y;
@@ -151,12 +156,13 @@ Mat* PBAS::process(const Mat frame) {
     // }
     auto start = high_resolution_clock::now();
     for(int x=0; x < nRows; ++x) {
-        this->i = frame.ptr<uint8_t>(x);
+        this->i = this->frame.ptr<uint8_t>(x);
         this->i_grad = frame_grad.ptr<uint8_t>(x);
         this->q = F.ptr<uint8_t>(x);
         this->r = R.ptr<float>(x);
         this->t = T.ptr<float>(x);
-        this->med = median.ptr<uint8_t>(x);
+        this->med = median.ptr<Vec3b>(x);
+        this->i_rgb = this->frame_rgb.ptr<Vec3b>(x);
 
         for (int i_ptr=0; i_ptr < nCols; ++i_ptr) {
             //y = i_ptr % (channels * this->h);
@@ -173,8 +179,6 @@ Mat* PBAS::process(const Mat frame) {
 }
 
 void PBAS::updateF(int x, int y, int i_ptr) {
-    //cout << "UpdateF - " << x << " " << y << endl;
-
     //c = 0
     //while c < 3 or k >= self.K:
     int k = 0;       // number of lower-than-R distances for the channel 'c'
@@ -190,12 +194,12 @@ void PBAS::updateF(int x, int y, int i_ptr) {
         q[i_ptr] = 0;
         updateB(x, y, i_ptr);
     } else {
+        //is_shadow(i_ptr);
         q[i_ptr] = 255;
     }
 }
 
 void PBAS::updateB(int x, int y, int i_ptr) {
-    //cout << "UpdateB - " << x << " " << y << endl;
     int rand_numb, n, y_disp, x_disp;
     pair<int, int> disp;
     float update_p;
@@ -236,8 +240,6 @@ void PBAS::updateB(int x, int y, int i_ptr) {
 }
 
 void PBAS::updateR(int x, int y, int n, int i_ptr) {
-    //cout << "UpdateR - " << x << " " << y << endl;
-
     // find dmin
     uint8_t I = i[i_ptr];
     uint8_t I_grad = i_grad[i_ptr];
@@ -302,8 +304,6 @@ void PBAS::updateR_notoptimized(int x, int y, int n) {
 }
 
 void PBAS::updateT(int x, int y, int i_ptr) {
-    //cout << "UpdateT - " << x << " " << y << endl;
-
     float Tinc_over_dmin;
     Tinc_over_dmin = T_inc / d_minavg.at<float>(x,y);
     if(q[i_ptr] == 255)
@@ -315,14 +315,27 @@ void PBAS::updateT(int x, int y, int i_ptr) {
 }
 
 void PBAS::updateMedian(int col){
-    uint8_t med_pixel = this->med[col];
-    uint8_t frame_pixel = this->i[col];
-    if(med_pixel != frame_pixel){
-        if(med_pixel > frame_pixel){
-            this->med[col] --;
-        }else{
-            this->med[col] ++;
+    Vec3b med_pixel = this->med[col];
+    Vec3b frame_pixel = this->i_rgb[col];
+
+    for(uint8_t c=0; c < 3; c++) {    
+        if(med_pixel[c] > frame_pixel[c]) {
+            this->med[col][c]--;
+        }
+        if(med_pixel[c] < frame_pixel[c]) {
+            this->med[col][c]++;
         }
     }
 }
+
+void PBAS::is_shadow(int col){
+    Mat i_hsv(Size(1,1),CV_8UC1);
+    Mat m_hsv(Size(1,1),CV_8UC1);
+
+    cvtColor(this->i_rgb[col], i_hsv, cv::COLOR_RGB2HSV);
+    cvtColor(this->med[col], m_hsv, cv::COLOR_RGB2HSV);
+    int a=4;
+}
+
+
 
