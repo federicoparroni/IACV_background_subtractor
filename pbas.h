@@ -19,9 +19,9 @@ class PBAS
         int alpha;
         float I_m;
 
-        Mat frame_rgb;
         Mat median;
         Mat frame;
+        Mat frame_rgb;
         Mat frame_grad;
         int w;
         int h;
@@ -40,7 +40,7 @@ class PBAS
         uint8_t *q;
         float *r;
         float *t;
-        uint8_t *med;
+        Vec3b *med;
 
         void init();
 

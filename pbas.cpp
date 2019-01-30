@@ -161,7 +161,7 @@ Mat* PBAS::process(const Mat* frame) {
         this->q = F.ptr<uint8_t>(x);
         this->r = R.ptr<float>(x);
         this->t = T.ptr<float>(x);
-        this->med = median.ptr<uint8_t>(x);
+        this->med = median.ptr<Vec3b>(x);
         this->i_rgb = this->frame_rgb.ptr<uint8_t>(x);
 
         for (int i_ptr=0; i_ptr < nCols; ++i_ptr) {
@@ -318,13 +318,15 @@ void PBAS::updateT(int x, int y, int i_ptr) {
 }
 
 void PBAS::updateMedian(int col){
-    uint8_t med_pixel = this->med[col];
-    uint8_t frame_pixel = this->i[col];
-    if(med_pixel != frame_pixel){
-        if(med_pixel > frame_pixel) {
-            this->med[col]--;
-        } else {
-            this->med[col]++;
+    Vec3b med_pixel = this->med[col];
+    Vec3b frame_pixel = this->i_rgb[col];
+
+    for(uint8_t c=0; c < 3; c++) {    
+        if(med_pixel[c] > frame_pixel[c]) {
+            this->med[col][c]--;
+        }
+        if(med_pixel[c] < frame_pixel[c]) {
+            this->med[col][c]++;
         }
     }
 }
