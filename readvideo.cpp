@@ -6,7 +6,9 @@ using namespace std;
 using namespace cv;
 
 int main(int argc, char const *argv[]) {
-    VideoCapture cap("videos/salitona.mp4");
+    string filename = "videos/camera1.mp4";
+    if(argc == 2) filename = argv[1];
+    VideoCapture cap(filename);
     PBAS *pbas = new PBAS();
 
     Mat frame;
@@ -20,9 +22,11 @@ int main(int argc, char const *argv[]) {
         cap >> frame;
         if (frame.empty()) break;
 
-        mask = pbas->process(frame);
+        mask = pbas->process(&frame);
         imshow("Frame", frame);
+        moveWindow("Frame", 120,20);
         imshow("Mask", *mask);
+        moveWindow("Mask", 490,20);
         char c=(char)waitKey(25);
         if(c==27) break;
     }

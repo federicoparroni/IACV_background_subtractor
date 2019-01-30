@@ -65,7 +65,7 @@ Metrics eval(string path) {
 
     for (int i=0; i < inputs.size(); i++){
         Mat input, gt, mask;
-        input = imread(inputs[i].string(), CV_LOAD_IMAGE_COLOR);        break;
+        input = imread(inputs[i].string(), CV_LOAD_IMAGE_COLOR);
 
         cvtColor(input, input, cv::COLOR_RGB2GRAY);
         mask = *(pbas->process(input));
