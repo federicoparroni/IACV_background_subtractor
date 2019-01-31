@@ -19,6 +19,11 @@ class PBAS
         int alpha;
         float I_m;
 
+        float TAU_H;
+        float TAU_S;
+        float ALPHA;
+        float BETA;
+
         Mat median;
         Mat frame;
         Mat frame_rgb;
@@ -55,7 +60,7 @@ class PBAS
         void updateT(int x, int y, int i_ptr);
         void init_Mat(Mat* matrix, float initial_value);
         Mat gradient_magnitude(Mat* frame);
-        void is_shadow(int col);
+        int is_shadow(int col);
     public:
         PBAS();
         PBAS(int N, int K, float R_incdec, int R_lower, int R_scale, float T_dec, int T_inc, int T_lower, int T_upper, int alpha);
