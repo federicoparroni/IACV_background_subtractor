@@ -18,7 +18,7 @@ int main(int argc, char const *argv[]) {
         cout << "Error opening video stream or file" << endl;
         return -1;
     }
-    while(1){
+    while(1) {
         cap >> frame;
         if (frame.empty()) break;
 

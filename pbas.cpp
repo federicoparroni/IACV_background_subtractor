@@ -11,6 +11,7 @@
 using namespace std::chrono;
 
 using namespace std;
+using namespace cv;
 
 
 PBAS::PBAS() {
@@ -112,6 +113,7 @@ void PBAS::init_Mat(Mat* matrix, float initial_value){
     }
 }
 
+//  Fast iteratation over Mat pixels: https://stackoverflow.com/a/46966298
 Mat* PBAS::process(const Mat* frame) {
     //convert the frame in rgb and store it in the class variable this->frame
     cvtColor(*frame, this->frame, cv::COLOR_RGB2GRAY);
@@ -369,6 +371,3 @@ int PBAS::is_shadow(int col){
     }
     return 0;
 }
-
-
-
