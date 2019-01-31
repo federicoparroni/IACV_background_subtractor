@@ -179,9 +179,43 @@ Mat* PBAS::process(const Mat* frame) {
     }
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
-    medianBlur(F,F,9);
+    //medianBlur(F,F,3);
     cout << duration.count() << "ms" << endl;
     
+    Mat hsv_frame, hsv_bg;
+    cvtColor(*frame, hsv_frame, COLOR_RGB2HSV);
+    cvtColor(median, hsv_bg, COLOR_RGB2HSV);
+
+    hsv_frame.convertTo(hsv_frame, CV_16SC3);
+    hsv_bg.convertTo(hsv_bg, CV_16SC3);
+
+    Mat frame_channels[3], bg_channels[3];
+    split(hsv_frame, frame_channels);
+    split(hsv_bg, bg_channels);
+    
+    Mat Hdiff = frame_channels[0]-bg_channels[0];
+    Hdiff.convertTo(Hdiff, CV_32F);
+    pow(Hdiff, 2, Hdiff);
+
+    Mat Sdiff = abs(frame_channels[1]-bg_channels[1]);
+    Sdiff.convertTo(Sdiff, CV_32F);
+    pow(Sdiff, 2, Sdiff);
+
+    Mat Vdiff = abs(frame_channels[2]-bg_channels[2]);
+    Vdiff.convertTo(Vdiff, CV_32F);
+    pow(Vdiff, 2, Vdiff);
+
+    Hdiff.convertTo(Hdiff, CV_8UC1);
+    Vdiff.convertTo(Hdiff, CV_8UC1);
+    Hdiff.convertTo(Hdiff, CV_8UC1);
+
+    imshow("H frame", Hdiff);
+    imshow("S frame", Sdiff);
+    imshow("V frame", Vdiff);
+    moveWindow("H frame", 120,380);
+    moveWindow("S frame", 490,380);
+    moveWindow("V frame", 800,380);
+
     return &F;
 }
 
@@ -337,32 +371,33 @@ void PBAS::updateMedian(int col){
 }
 
 int PBAS::is_shadow(int col){
-    //cout<< "rgb" << this->i_rgb[col] <<endl;
+    //cout<< "rgb" << this->i_rgb[col] <<endl
     Vec3b frame_rgb_pixel = i_rgb[col];
     Vec3b median_rgb_pixel = med[col];
     Mat med_pixel(1,1,CV_8UC3, &median_rgb_pixel);
     Mat rgb_pixel(1,1,CV_8UC3, &frame_rgb_pixel);
     Mat frame_hsv_pixel_mat;
     Mat median_hsv_pixel_mat;
-    cvtColor(rgb_pixel, frame_hsv_pixel_mat, cv::COLOR_RGB2HSV);
-    cvtColor(med_pixel, median_hsv_pixel_mat, cv::COLOR_RGB2HSV);
+    cvtColor(rgb_pixel, frame_hsv_pixel_mat, COLOR_RGB2HSV);
+    cvtColor(med_pixel, median_hsv_pixel_mat, COLOR_RGB2HSV);
     //cout<< i_hsv.at<Vec3b>(0,0) <<endl;
     Vec3b median_hsv_pixel = median_hsv_pixel_mat.at<Vec3b>(0,0);
     Vec3b frame_hsv_pixel = frame_hsv_pixel_mat.at<Vec3b>(0,0);
 
-    uint8_t h_m = median_hsv_pixel[0];
-    uint8_t s_m = median_hsv_pixel[1];
-    uint8_t v_m = median_hsv_pixel[2]==0?1:median_hsv_pixel[2];
+    int h_m = median_hsv_pixel[0];
+    int s_m = median_hsv_pixel[1];
+    int v_m = median_hsv_pixel[2]==0?1:median_hsv_pixel[2];
 
-    uint8_t h_f = frame_hsv_pixel[0];
-    uint8_t s_f = frame_hsv_pixel[1];
-    uint8_t v_f = frame_hsv_pixel[2];
+    int h_f = frame_hsv_pixel[0];
+    int s_f = frame_hsv_pixel[1];
+    int v_f = frame_hsv_pixel[2];
 
     //cout<< "TAU_H " << abs(h_m-h_f) <<endl;
     //cout<< "TAU_S " << abs(s_m-s_f) <<endl;
     //cout<< "V " << float(v_f/v_m) <<endl;
     
     if(abs(h_m-h_f)<TAU_H && abs(s_m-s_f)<TAU_S && ALPHA<=(float)v_f/v_m && (float)v_f/v_m<=BETA){
+    //if(abs(v_m-v_f)<20 && abs(s_m-s_f)<20){
         return 1;
         //cout<< "TAU_H " << abs(h_m-h_f) <<endl;
         //cout<< "TAU_S " << abs(s_m-s_f) <<endl;
