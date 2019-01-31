@@ -307,9 +307,9 @@ void PBAS::updateR_notoptimized(int x, int y, int n) {
 void PBAS::updateT(int x, int y, int i_ptr) {
     float oldT = t[i_ptr];
     if(q[i_ptr] == 255)
-        t[i_ptr] += T_inc / d_minavg.at<float>(x,y);
+        t[i_ptr] += T_inc / (d_minavg.at<float>(x,y) + 1);
     else
-        t[i_ptr] -= T_dec / d_minavg.at<float>(x,y);
+        t[i_ptr] -= T_dec / (d_minavg.at<float>(x,y) + 1);
     //cout << d_minavg.at<float>(x,y) << endl;
     //cout << t[i_ptr] << endl; 
 
