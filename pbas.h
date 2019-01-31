@@ -61,6 +61,7 @@ class PBAS
         void init_Mat(Mat* matrix, float initial_value);
         Mat gradient_magnitude(Mat* frame);
         int is_shadow(int col);
+        Mat shadows_corner(Mat* frame, Mat* mask);
     public:
         PBAS();
         PBAS(int N, int K, float R_incdec, int R_lower, int R_scale, float T_dec, int T_inc, int T_lower, int T_upper, int alpha);

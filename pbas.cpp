@@ -113,6 +113,28 @@ void PBAS::init_Mat(Mat* matrix, float initial_value){
     }
 }
 
+Mat PBAS::shadows_corner(Mat* frame, Mat* mask){
+    Mat dst, dst_norm, dst_norm_scaled;
+    dst = Mat::zeros(frame->size(), CV_32FC1);
+    /// Detector parameters
+    int blockSize = 15;
+    int apertureSize = 3;
+    double k = 0.04;
+
+    bitwise_and(*frame, *mask, *frame);
+    /// Detecting corners
+    cornerHarris(*frame, dst, blockSize, apertureSize, k, BORDER_DEFAULT);
+    normalize(dst, dst_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat());
+    convertScaleAbs(dst_norm, dst_norm_scaled);
+
+    // imshow("corners", dst_norm_scaled );
+
+    dst_norm_scaled.setTo(255, dst_norm_scaled>=50);
+    dst_norm_scaled.setTo(0, dst_norm_scaled<50);
+
+    return dst_norm_scaled;
+}
+
 //  Fast iteratation over Mat pixels: https://stackoverflow.com/a/46966298
 Mat* PBAS::process(const Mat* frame) {
     //convert the frame in rgb and store it in the class variable this->frame
@@ -183,6 +205,8 @@ Mat* PBAS::process(const Mat* frame) {
     medianBlur(F,F,9);
     cout << duration.count() << "ms" << endl;
     
+    // this->F = shadows_corner(&this->frame, &F);
+
     return &F;
 }
 
@@ -323,7 +347,7 @@ void PBAS::updateT(int x, int y, int i_ptr) {
 
     t[i_ptr] = max((float)T_lower, t[i_ptr]);
     t[i_ptr] = min((float)T_upper, t[i_ptr]);
-    cout << "pos " + to_string(x) + " " + to_string(y) + ". old T: " + to_string(oldT) + " new T: " + to_string(t[i_ptr]) << endl;
+    // cout << "pos " + to_string(x) + " " + to_string(y) + ". old T: " + to_string(oldT) + " new T: " + to_string(t[i_ptr]) << endl;
 }
 
 void PBAS::updateMedian(int col){
