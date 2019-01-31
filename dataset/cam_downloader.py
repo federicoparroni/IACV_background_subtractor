@@ -15,7 +15,10 @@ cam_ids = [ ('salitona', 554),
             ('foreste', 1258),
             ('milanoest', 174),
             #('tunnelligure', 1296),
-            ('traffico', 1039) ]
+            ('traffico', 1039),
+            ('belluno', 1075), 
+            ('barletta', 1757),
+            ('pero', 171) ]
 prev_time = 0
 
 request_prefix_url = 'https://www.autostrade.it/autostrade-gis/popupVideocam.do?tlc='
