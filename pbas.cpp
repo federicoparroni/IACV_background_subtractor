@@ -14,8 +14,8 @@ using namespace std;
 
 
 PBAS::PBAS() {
-    N = 30;
-    K = 2;
+    N = 5;
+    K = 3;
     R_incdec = 0.05;
     R_lower = 18;
     R_scale = 5;
@@ -77,7 +77,7 @@ float PBAS::distance(uint8_t a, uint8_t b) {
 }
 
 float PBAS::distance(uint8_t p, uint8_t p_grad, uint8_t g, uint8_t g_grad) {
-    return (this->alpha/this->I_m) * abs(p_grad - g_grad) + abs(p - g); 
+    return (this->alpha/this->I_m) * abs((int)p_grad - (int)g_grad) + abs((int)p - (int)g); 
 }
 
 Mat PBAS::gradient_magnitude(Mat* frame){
@@ -127,13 +127,13 @@ Mat* PBAS::process(const Mat* frame) {
     // B, D, d_minavg initialization
     if (B.size() == 0) {
         for(int i=0; i<N; i++) {
-            Mat b_elem(h, w, CV_8UC1);
-            randu(b_elem, 0, 255);
-            B.push_back(b_elem);
+            // Mat b_elem(h, w, CV_8UC1);
+            // randu(b_elem, 0, 255);
+            B.push_back(this->frame.clone());
 
-            Mat b_grad_elem(h, w, CV_8UC1);
-            randu(b_grad_elem, 0, 255);
-            B_grad.push_back(b_grad_elem);
+            // Mat b_grad_elem(h, w, CV_8UC1);
+            // randu(b_grad_elem, 0, 255);
+            B_grad.push_back(frame_grad.clone());
 
             Mat d_elem = Mat::zeros(h, w, CV_8UC1);
             D.push_back(d_elem);
@@ -148,6 +148,7 @@ Mat* PBAS::process(const Mat* frame) {
 
         init_Mat(&T, T_lower);
         init_Mat(&R, R_lower);
+        init_Mat(&d_minavg, 128);
     }
 
     int channels = this->frame.channels();
@@ -211,18 +212,19 @@ void PBAS::updateB(int x, int y, int i_ptr) {
     float update_p;
 
     //initialize random seed
-    srand (time(NULL));
+    //srand (time(NULL));
     // generate a number between 0 and 99
     rand_numb = rand() %100;
     // get the T[x,y]
     update_p = 100 / t[i_ptr];
-    n = rand() % N;
 
+    n = rand() % N;
     if(rand_numb < update_p) {
         //generate a random number between 0 and N-1
+        
+        updateR(x, y, n, i_ptr);
         B[n].at<uint8_t>(x, y) = i[i_ptr];
         B_grad[n].at<uint8_t>(x, y) = i_grad[i_ptr];
-        updateR(x, y, n, i_ptr);
     }
     
     rand_numb = rand() %100;
@@ -237,11 +239,9 @@ void PBAS::updateB(int x, int y, int i_ptr) {
             x_disp = disp.first;
             y_disp = disp.second;
         }
-
+        updateR_notoptimized(x+x_disp, y+y_disp, n);
         B[n].at<uint8_t>(x+x_disp, y+y_disp) = frame.at<uint8_t>(x+x_disp, y+y_disp);
         B_grad[n].at<uint8_t>(x+x_disp, y+y_disp) = frame_grad.at<uint8_t>(x+x_disp, y+y_disp);
-        updateR_notoptimized(x+x_disp, y+y_disp, n);
-        
     }
 }
 
@@ -261,11 +261,11 @@ void PBAS::updateR(int x, int y, int n, int i_ptr) {
     D[n].at<uint8_t>(x, y) = d_min;
 
     // find davg
-    unsigned int d_cum = 0;
+    float d_cum = 0;
     for (int i=0; i<N; i++){
         d_cum += (int)D[i].at<uint8_t>(x, y);
     }
-    d_minavg.at<float>(x,y) = d_cum/float(N);
+    d_minavg.at<float>(x,y) = d_cum/N;
 
     // update R
     if (r[i_ptr] > d_minavg.at<float>(x,y) * R_scale){
@@ -293,11 +293,12 @@ void PBAS::updateR_notoptimized(int x, int y, int n) {
     D[n].at<uchar>(x, y) = d_min;
 
     // find davg
-    int d_cum = 0;
+    float d_cum = 0;
     for (int i=0; i<N; i++){
         d_cum += (int)D[i].at<uchar>(x, y);
     }
-    d_minavg.at<float>(x,y) = d_cum/float(N);
+    d_minavg.at<float>(x,y) = d_cum/N;
+    // cout << d_minavg.at<float>(x,y) << endl;
 
     // update R
     if (R.at<float>(x,y) > d_minavg.at<float>(x,y) * R_scale){
@@ -310,14 +311,17 @@ void PBAS::updateR_notoptimized(int x, int y, int n) {
 }
 
 void PBAS::updateT(int x, int y, int i_ptr) {
-    float Tinc_over_dmin;
-    Tinc_over_dmin = T_inc / d_minavg.at<float>(x,y);
+    float oldT = t[i_ptr];
     if(q[i_ptr] == 255)
-        t[i_ptr] += Tinc_over_dmin;
+        t[i_ptr] += T_inc / (d_minavg.at<float>(x,y) + 1);
     else
-        t[i_ptr] -= Tinc_over_dmin;
+        t[i_ptr] -= T_dec / (d_minavg.at<float>(x,y) + 1);
+    //cout << d_minavg.at<float>(x,y) << endl;
+    //cout << t[i_ptr] << endl; 
+
     t[i_ptr] = max((float)T_lower, t[i_ptr]);
     t[i_ptr] = min((float)T_upper, t[i_ptr]);
+    cout << "pos " + to_string(x) + " " + to_string(y) + ". old T: " + to_string(oldT) + " new T: " + to_string(t[i_ptr]) << endl;
 }
 
 void PBAS::updateMedian(int col){
