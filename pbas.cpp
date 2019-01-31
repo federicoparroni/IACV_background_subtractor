@@ -240,8 +240,8 @@ void PBAS::updateB(int x, int y, int i_ptr) {
 
         B[n].at<uint8_t>(x+x_disp, y+y_disp) = frame.at<uint8_t>(x+x_disp, y+y_disp);
         B_grad[n].at<uint8_t>(x+x_disp, y+y_disp) = frame_grad.at<uint8_t>(x+x_disp, y+y_disp);
-        
         updateR_notoptimized(x+x_disp, y+y_disp, n);
+        
     }
 }
 
@@ -348,23 +348,20 @@ int PBAS::is_shadow(int col){
     Vec3b median_hsv_pixel = median_hsv_pixel_mat.at<Vec3b>(0,0);
     Vec3b frame_hsv_pixel = frame_hsv_pixel_mat.at<Vec3b>(0,0);
 
-    uint8_t h_m = median_hsv_pixel[0];
-    uint8_t s_m = median_hsv_pixel[1];
-    uint8_t v_m = median_hsv_pixel[2]==0?1:median_hsv_pixel[2];
+    float h_m = median_hsv_pixel[0];
+    float s_m = median_hsv_pixel[1];
+    float v_m = median_hsv_pixel[2]==0?1:median_hsv_pixel[2];
 
-    uint8_t h_f = frame_hsv_pixel[0];
-    uint8_t s_f = frame_hsv_pixel[1];
-    uint8_t v_f = frame_hsv_pixel[2];
+    float h_f = frame_hsv_pixel[0];
+    float s_f = frame_hsv_pixel[1];
+    float v_f = frame_hsv_pixel[2];
 
     //cout<< "TAU_H " << abs(h_m-h_f) <<endl;
     //cout<< "TAU_S " << abs(s_m-s_f) <<endl;
-    //cout<< "V " << float(v_f/v_m) <<endl;
+    //cout<< "V " << v_f/v_m <<endl;
     
     if(abs(h_m-h_f)<TAU_H && abs(s_m-s_f)<TAU_S && ALPHA<=(float)v_f/v_m && (float)v_f/v_m<=BETA){
         return 1;
-        //cout<< "TAU_H " << abs(h_m-h_f) <<endl;
-        //cout<< "TAU_S " << abs(s_m-s_f) <<endl;
-        //cout<< "V " << float(v_f/v_m) <<endl;
     }
     return 0;
 }
