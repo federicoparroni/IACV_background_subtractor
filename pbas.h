@@ -37,6 +37,7 @@ class PBAS
         Mat T;
         Mat F;
         Mat d_minavg;
+        Mat final_mask;
         vector<pair<int,int>> displacement_vec;
 
         Mat frame_hsl; Vec3d *f_hsl_ptr;
@@ -46,6 +47,7 @@ class PBAS
         const Vec3b *i_rgb;
         const uint8_t *i_grad;
         uint8_t *q;
+        uint8_t *q_shadow_hsv;
         float *r;
         float *t;
         Vec3b *med;
@@ -70,6 +72,8 @@ class PBAS
         Vec3d tohsLprojection(Vec3b pixel);
         double hsLproduct(Vec3b p1, Vec3b p2);
 
+        // shadows with paperino
+        Mat shadows_corner(Mat* frame, Mat* mask);
     public:
         PBAS();
         PBAS(int N, int K, float R_incdec, int R_lower, int R_scale, float T_dec, int T_inc, int T_lower, int T_upper, int alpha);
@@ -78,5 +82,7 @@ class PBAS
         Mat* process(const Mat* frame);
 
         Mat frame;
-        Mat mask_shadows;
+        Mat shadow_cncc;
+        Mat F_shadow_hsv;
+        Mat shadow_corner;
 };

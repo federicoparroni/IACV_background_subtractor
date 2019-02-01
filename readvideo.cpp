@@ -13,6 +13,7 @@ int main(int argc, char const *argv[]) {
 
     Mat frame;
     Mat* mask;
+    Mat edges;
 
     if(!cap.isOpened()){
         cout << "Error opening video stream or file" << endl;
@@ -24,9 +25,24 @@ int main(int argc, char const *argv[]) {
 
         mask = pbas->process(&frame);
         imshow("Frame", frame);
-        moveWindow("Frame", 120,20);
+        moveWindow("Frame", 20,20);
+
         imshow("Mask", *mask);
-        moveWindow("Mask", 490,20);
+        moveWindow("Mask", 400,20);
+
+        imshow("Shadows CNCC", pbas->shadow_cncc);
+        moveWindow("Shadows CNCC", 750,20);
+
+        imshow("shadow_hsv", pbas->F_shadow_hsv);
+        moveWindow("Shadows hsv", 350,400);
+
+        imshow("shadow_corners", pbas->shadow_corner);
+        moveWindow("Shadows hsv", 350,400);
+
+        // Canny(pbas->frame, edges, 80, 200);
+        // imshow("Canny", edges);
+        // moveWindow("Canny", 400, 500);
+
         char c=(char)waitKey(25);
         if(c==27) break;
     }

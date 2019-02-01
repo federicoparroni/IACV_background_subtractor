@@ -117,6 +117,28 @@ void PBAS::init_Mat(Mat* matrix, float initial_value){
     }
 }
 
+Mat PBAS::shadows_corner(Mat* frame, Mat* mask){
+    Mat dst, dst_norm, dst_norm_scaled, masked_frame;
+    dst = Mat::zeros(frame->size(), CV_32FC1);
+    /// Detector parameters
+    int blockSize = 35;
+    int apertureSize = 1;
+    double k = 0.05;
+
+    bitwise_and(*frame, *mask, masked_frame);
+    /// Detecting corners
+    cornerHarris(masked_frame, dst, blockSize, apertureSize, k, BORDER_DEFAULT);
+    normalize(dst, dst_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat());
+    convertScaleAbs(dst_norm, dst_norm_scaled);
+
+    // imshow("corners", dst_norm_scaled );
+
+    dst_norm_scaled.setTo(255, dst_norm_scaled>=20);
+    dst_norm_scaled.setTo(0, dst_norm_scaled<20);
+
+    return dst_norm_scaled;
+}
+
 //  Fast iteratation over Mat pixels: https://stackoverflow.com/a/46966298
 Mat* PBAS::process(const Mat* frame) {
     //convert the frame in rgb and store it in the class variable this->frame
@@ -145,6 +167,7 @@ Mat* PBAS::process(const Mat* frame) {
             D.push_back(d_elem);
         }
         F = Mat::zeros(h, w, CV_8UC1);
+        F_shadow_hsv = Mat::zeros(h, w, CV_8UC1);
         d_minavg = Mat::zeros(h, w, CV_32FC1);
         T = Mat::zeros(h, w, CV_32FC1);
         R = Mat::zeros(h, w, CV_32FC1);
@@ -164,16 +187,12 @@ Mat* PBAS::process(const Mat* frame) {
     int nRows = this->h;
     int nCols = w * channels;
 
-    // int y;
-    // if (frame.isContinuous() && F.isContinuous() && R.isContinuous() && T.isContinuous()) {
-    //     nCols *= nRows;
-    //     nRows = 1;
-    // }
     auto start = high_resolution_clock::now();
     for(int x=0; x < nRows; ++x) {
         this->i = this->frame.ptr<uint8_t>(x);
         this->i_grad = frame_grad.ptr<uint8_t>(x);
         this->q = F.ptr<uint8_t>(x);
+        this->q_shadow_hsv = F_shadow_hsv.ptr<uint8_t>(x);
         this->r = R.ptr<float>(x);
         this->t = T.ptr<float>(x);
         this->med = median.ptr<Vec3b>(x);
@@ -183,7 +202,6 @@ Mat* PBAS::process(const Mat* frame) {
         this->bg_hsl_ptr = bg_hsl.ptr<Vec3d>(x);
 
         for (int i_ptr=0; i_ptr < nCols; ++i_ptr) {
-            //y = i_ptr % (channels * this->h);
             updateMedian(i_ptr);
             updateF(x, i_ptr, i_ptr);
             updateT(x, i_ptr, i_ptr);
@@ -236,6 +254,12 @@ Mat* PBAS::process(const Mat* frame) {
     // moveWindow("S frame", 490,380);
     // moveWindow("V frame", 800,380);
 
+    medianBlur(F_shadow_hsv,F_shadow_hsv,9);
+    
+    this->shadow_corner = shadows_corner(&this->frame, &F);
+    // final_mask = F&F_shadow_hsv; 
+    // return &final_mask;
+    
     return &F;
 }
 
@@ -267,7 +291,7 @@ void PBAS::color_normalized_cross_correlation() {
     int halfM = (M-1)/2; int halfN = (N-1)/2;
     float cncc_threshold = 0.9;
 
-    mask_shadows = Mat::zeros(h, w, CV_8UC1);
+    shadow_cncc = Mat::zeros(h, w, CV_8UC1);
 
     for(int x=halfM; x<this->h - halfM; ++x) {
     for(int y=halfN; y<this->w - halfN; ++y) {
@@ -297,9 +321,8 @@ void PBAS::color_normalized_cross_correlation() {
             cncc /= sqrt(var_f * var_bg);
 
             if(cncc < cncc_threshold) {
-                mask_shadows.at<uint8_t>(x,y) = 255;
+                shadow_cncc.at<uint8_t>(x,y) = 255;
             }
-            cout << cncc << endl;
         }
     }
     }
@@ -320,10 +343,11 @@ void PBAS::updateF(int x, int y, int i_ptr) {
     // check if at least K distances are less than R(x,y) => background pixel
     if(k >= K) {
         q[i_ptr] = 0;
+        q_shadow_hsv[i_ptr]=0;
         updateB(x, y, i_ptr);
     } else {
-        // if(!is_shadow(i_ptr)) q[i_ptr] = 255;
-        // else q[i_ptr] = 0;
+        if(!is_shadow(i_ptr)) q_shadow_hsv[i_ptr] = 255;
+        else q_shadow_hsv[i_ptr] = 0;
         q[i_ptr] = 255;
     }
 }
@@ -418,7 +442,6 @@ void PBAS::updateR_notoptimized(int x, int y, int n) {
         d_cum += (int)D[i].at<uchar>(x, y);
     }
     d_minavg.at<float>(x,y) = d_cum/N;
-    // cout << d_minavg.at<float>(x,y) << endl;
 
     // update R
     if (R.at<float>(x,y) > d_minavg.at<float>(x,y) * R_scale){
@@ -439,7 +462,6 @@ void PBAS::updateT(int x, int y, int i_ptr) {
 
     t[i_ptr] = max((float)T_lower, t[i_ptr]);
     t[i_ptr] = min((float)T_upper, t[i_ptr]);
-    //cout << "pos " + to_string(x) + " " + to_string(y) + ". old T: " + to_string(oldT) + " new T: " + to_string(t[i_ptr]) << endl;
 }
 
 void PBAS::updateMedian(int col){
@@ -476,13 +498,8 @@ int PBAS::is_shadow(int col){
     float h_f = frame_hsv_pixel[0];
     float s_f = frame_hsv_pixel[1];
     float v_f = frame_hsv_pixel[2];
-
-    //cout<< "TAU_H " << abs(h_m-h_f) <<endl;
-    //cout<< "TAU_S " << abs(s_m-s_f) <<endl;
-    //cout<< "V " << v_f/v_m <<endl;
     
     if(abs(h_m-h_f)<TAU_H && abs(s_m-s_f)<TAU_S && ALPHA<=(float)v_f/v_m && (float)v_f/v_m<=BETA){
-    //if(abs(v_m-v_f)<20 && abs(s_m-s_f)<20){
         return 1;
     }
     return 0;
