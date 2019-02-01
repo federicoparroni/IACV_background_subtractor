@@ -114,23 +114,25 @@ void PBAS::init_Mat(Mat* matrix, float initial_value){
 }
 
 Mat PBAS::shadows_corner(Mat* frame, Mat* mask){
-    Mat dst, dst_norm, dst_norm_scaled;
+    Mat dst, dst_norm, dst_norm_scaled, masked_frame;
     dst = Mat::zeros(frame->size(), CV_32FC1);
     /// Detector parameters
-    int blockSize = 15;
-    int apertureSize = 3;
-    double k = 0.04;
+    int blockSize = 35;
+    int apertureSize = 1;
+    double k = 0.05;
 
-    bitwise_and(*frame, *mask, *frame);
+    bitwise_and(*frame, *mask, masked_frame);
     /// Detecting corners
-    cornerHarris(*frame, dst, blockSize, apertureSize, k, BORDER_DEFAULT);
+    cornerHarris(masked_frame, dst, blockSize, apertureSize, k, BORDER_DEFAULT);
     normalize(dst, dst_norm, 0, 255, NORM_MINMAX, CV_32FC1, Mat());
     convertScaleAbs(dst_norm, dst_norm_scaled);
 
-    // imshow("corners", dst_norm_scaled );
+    imshow("corners", dst_norm_scaled );
 
-    dst_norm_scaled.setTo(255, dst_norm_scaled>=50);
-    dst_norm_scaled.setTo(0, dst_norm_scaled<50);
+    dst_norm_scaled.setTo(255, dst_norm_scaled>=20);
+    dst_norm_scaled.setTo(0, dst_norm_scaled<20);
+
+    imshow("shadow_corners", dst_norm_scaled);
 
     return dst_norm_scaled;
 }
@@ -163,6 +165,7 @@ Mat* PBAS::process(const Mat* frame) {
             D.push_back(d_elem);
         }
         F = Mat::zeros(h, w, CV_8UC1);
+        F_shadow_hsv = Mat::zeros(h, w, CV_8UC1);
         d_minavg = Mat::zeros(h, w, CV_32FC1);
         T = Mat::zeros(h, w, CV_32FC1);
         R = Mat::zeros(h, w, CV_32FC1);
@@ -188,6 +191,7 @@ Mat* PBAS::process(const Mat* frame) {
         this->i = this->frame.ptr<uint8_t>(x);
         this->i_grad = frame_grad.ptr<uint8_t>(x);
         this->q = F.ptr<uint8_t>(x);
+        this->q_shadow_hsv = F_shadow_hsv.ptr<uint8_t>(x);
         this->r = R.ptr<float>(x);
         this->t = T.ptr<float>(x);
         this->med = median.ptr<Vec3b>(x);
@@ -202,12 +206,13 @@ Mat* PBAS::process(const Mat* frame) {
     }
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
-    medianBlur(F,F,9);
+    medianBlur(F_shadow_hsv,F_shadow_hsv,9);
     cout << duration.count() << "ms" << endl;
     
-    // this->F = shadows_corner(&this->frame, &F);
-
-    return &F;
+    this->F = shadows_corner(&this->frame, &F);
+    imshow("shadow_hsv", F_shadow_hsv);
+    final_mask = F&F_shadow_hsv; 
+    return &final_mask;
 }
 
 void PBAS::updateF(int x, int y, int i_ptr) {
@@ -224,11 +229,12 @@ void PBAS::updateF(int x, int y, int i_ptr) {
     // check if at least K distances are less than R(x,y) => background pixel
     if(k >= K) {
         q[i_ptr] = 0;
+        q_shadow_hsv[i_ptr]=0;
         updateB(x, y, i_ptr);
     } else {
-        if(!is_shadow(i_ptr)) q[i_ptr] = 255;
-        else q[i_ptr] = 0;
-        //q[i_ptr] = 255;
+        if(!is_shadow(i_ptr)) q_shadow_hsv[i_ptr] = 255;
+        else q_shadow_hsv[i_ptr] = 0;
+        q[i_ptr] = 255;
     }
 }
 

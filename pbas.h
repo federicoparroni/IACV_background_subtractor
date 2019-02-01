@@ -36,13 +36,16 @@ class PBAS
         vector<Mat> D;
         Mat T;
         Mat F;
+        Mat F_shadow_hsv;
         Mat d_minavg;
+        Mat final_mask;
         vector<pair<int,int>> displacement_vec;
 
         const uint8_t *i;
         const Vec3b *i_rgb;
         const uint8_t *i_grad;
         uint8_t *q;
+        uint8_t *q_shadow_hsv;
         float *r;
         float *t;
         Vec3b *med;
