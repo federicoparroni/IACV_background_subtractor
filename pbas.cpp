@@ -213,8 +213,8 @@ Mat* PBAS::process(const Mat* frame) {
     }
     auto stop = high_resolution_clock::now();
     auto duration = duration_cast<milliseconds>(stop - start);
-    //medianBlur(F,F,3);
     
+    medianBlur(F,F,3);
     //cout << duration.count() << "ms" << endl;
 
     color_normalized_cross_correlation();

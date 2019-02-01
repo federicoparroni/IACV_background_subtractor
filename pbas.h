@@ -23,8 +23,6 @@ class PBAS
         float TAU_S;
         float ALPHA;
         float BETA;
-
-        Mat median;
         
         Mat frame_rgb;
         Mat frame_grad;
@@ -82,6 +80,8 @@ class PBAS
         Mat* process(const Mat* frame);
 
         Mat frame;
+        Mat median;
+
         Mat shadow_cncc;
         Mat F_shadow_hsv;
         Mat shadow_corner;
