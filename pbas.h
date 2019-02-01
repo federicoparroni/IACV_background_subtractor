@@ -25,7 +25,7 @@ class PBAS
         float BETA;
 
         Mat median;
-        Mat frame;
+        
         Mat frame_rgb;
         Mat frame_grad;
         int w;
@@ -38,6 +38,9 @@ class PBAS
         Mat F;
         Mat d_minavg;
         vector<pair<int,int>> displacement_vec;
+
+        Mat frame_hsl; Vec3d *f_hsl_ptr;
+        Mat bg_hsl; Vec3d *bg_hsl_ptr;
 
         const uint8_t *i;
         const Vec3b *i_rgb;
@@ -61,6 +64,12 @@ class PBAS
         void init_Mat(Mat* matrix, float initial_value);
         Mat gradient_magnitude(Mat* frame);
         int is_shadow(int col);
+
+        // shadows with CNCC
+        void color_normalized_cross_correlation();
+        Vec3d tohsLprojection(Vec3b pixel);
+        double hsLproduct(Vec3b p1, Vec3b p2);
+
     public:
         PBAS();
         PBAS(int N, int K, float R_incdec, int R_lower, int R_scale, float T_dec, int T_inc, int T_lower, int T_upper, int alpha);
@@ -68,4 +77,6 @@ class PBAS
 
         Mat* process(const Mat* frame);
 
+        Mat frame;
+        Mat mask_shadows;
 };
