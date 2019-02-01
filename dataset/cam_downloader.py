@@ -9,13 +9,13 @@ def timetostring():
     return '{}_{}_{}__{}_{}'.format(now.year, now.month, now.day, now.hour, now.minute)
 
 downloads_folder = 'dataset'
-download_every = 60*10 # seconds
-check_every = 60 # seconds
-cam_ids = [ ('salitona', 554),
-            ('foreste', 1258),
-            ('milanoest', 174),
+download_every = 80 # seconds
+check_every = 10 # seconds
+cam_ids = [ #('salitona', 554),
+            #('foreste', 1258),
+            #('milanoest', 174),
             #('tunnelligure', 1296),
-            ('traffico', 1039),
+            #('traffico', 1039),
             ('belluno', 1075), 
             ('barletta', 1757),
             ('pero', 171) ]
