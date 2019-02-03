@@ -23,6 +23,8 @@ int main(int argc, char const *argv[]) {
         cap >> frame;
         if (frame.empty()) break;
 
+        //GaussianBlur(frame, frame, Size(3,3), 0, 0);
+
         mask = pbas->process(&frame);
         imshow("Frame", frame);
         moveWindow("Frame", 20,20);
@@ -33,15 +35,24 @@ int main(int argc, char const *argv[]) {
         // imshow("Shadows CNCC", pbas->shadow_cncc);
         // moveWindow("Shadows CNCC", 750,20);
 
+        imshow("shadow_hsv", pbas->F_shadow_hsv);
+        moveWindow("Shadows hsv", 20,400);
+
+        // imshow("Shadows CNCC", pbas->shadow_cncc);
+        // moveWindow("Shadows CNCC", 750,20);
+
         // imshow("shadow_hsv", pbas->F_shadow_hsv);
         // moveWindow("Shadows hsv", 350,400);
 
-        // imshow("shadow_corners", pbas->shadow_corner);
-        // moveWindow("Shadows hsv", 350,400);
-
-        // Canny(pbas->frame, edges, 80, 200);
-        // imshow("Canny", edges);
-        // moveWindow("Canny", 400, 500);
+        // Mat converted;
+        // pbas->median.convertTo(converted, CV_16SC3);
+        // frame.convertTo(frame, CV_16SC3);
+        // Mat res = abs(frame - converted);
+        // res.convertTo(res, CV_8UC3);
+        // cvtColor(res, res, COLOR_RGB2GRAY);
+        // threshold(res, res, 50, 255, THRESH_BINARY);
+        // imshow("bg model", res);
+        // moveWindow("bg model", 350,400);
 
         char c=(char)waitKey(25);
         if(c==27) break;
