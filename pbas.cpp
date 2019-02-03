@@ -167,16 +167,16 @@ Mat* PBAS::process(const Mat* frame) {
             D.push_back(d_elem);
         }
         F = Mat::zeros(h, w, CV_8UC1);
-        F_shadow_hsv = Mat::zeros(h, w, CV_8UC1);
+        //F_shadow_hsv = Mat::zeros(h, w, CV_8UC1);
         d_minavg = Mat::zeros(h, w, CV_32FC1);
         T = Mat::zeros(h, w, CV_32FC1);
         R = Mat::zeros(h, w, CV_32FC1);
 
-        frame_hsl = Mat::zeros(h, w, CV_64FC3);
-        bg_hsl = Mat::zeros(h, w, CV_64FC3);
+        //frame_hsl = Mat::zeros(h, w, CV_64FC3);
+        //bg_hsl = Mat::zeros(h, w, CV_64FC3);
         
         //initialize the median with the first frame
-        median = frame->clone();
+        //median = frame->clone();
 
         init_Mat(&T, T_lower);
         init_Mat(&R, R_lower);
@@ -202,7 +202,7 @@ Mat* PBAS::process(const Mat* frame) {
         // this->bg_hsl_ptr = bg_hsl.ptr<Vec3d>(x);
 
         for (int i_ptr=0; i_ptr < nCols; ++i_ptr) {
-            updateMedian(i_ptr);
+            //updateMedian(i_ptr);
             updateF(x, i_ptr, i_ptr);
             updateT(x, i_ptr, i_ptr);
 
@@ -259,8 +259,39 @@ Mat* PBAS::process(const Mat* frame) {
     // this->shadow_corner = shadows_corner(&this->frame, &F);
     // final_mask = F&F_shadow_hsv; 
     // return &final_mask;
-    
+
+    showCVMat(R, true, "fica");
+
     return &F;
+}
+
+void PBAS::showCVMat(Mat matrix, bool normalize, string window_name){
+    Mat matrix_p;
+    double max_matrix;
+    
+    //initialize the matrix to print with the value of the matrix passed as parameter
+    matrix_p = matrix.clone();
+
+    if(normalize){
+    
+        //convert the matrix into double
+        matrix_p.convertTo(matrix_p, CV_64FC1);
+        
+        // retrieve the maximum of the matrix and put it into max_matrix
+        minMaxLoc(matrix, NULL, &max_matrix);
+        
+        // bring all the values between 0 and 1
+        matrix_p /= max_matrix;
+
+        // bring all the values between 0 and 255
+        matrix_p *= 255;
+    }
+
+    //convert the value of the matrix into INT values
+    matrix_p.convertTo(matrix_p, CV_8UC1);
+
+    //show the matrix
+    imshow(window_name, matrix_p);
 }
 
 // project a HLS pixel into the euclidean h,s,L space
