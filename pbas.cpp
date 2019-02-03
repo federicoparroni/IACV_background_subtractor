@@ -198,8 +198,8 @@ Mat* PBAS::process(const Mat* frame) {
         this->med = median.ptr<Vec3b>(x);
         this->i_rgb = this->frame_rgb.ptr<Vec3b>(x);
 
-        this->f_hsl_ptr = frame_hsl.ptr<Vec3d>(x);
-        this->bg_hsl_ptr = bg_hsl.ptr<Vec3d>(x);
+        // this->f_hsl_ptr = frame_hsl.ptr<Vec3d>(x);
+        // this->bg_hsl_ptr = bg_hsl.ptr<Vec3d>(x);
 
         for (int i_ptr=0; i_ptr < nCols; ++i_ptr) {
             updateMedian(i_ptr);
@@ -207,8 +207,8 @@ Mat* PBAS::process(const Mat* frame) {
             updateT(x, i_ptr, i_ptr);
 
             // convert pixel to hsL
-            f_hsl_ptr[i_ptr] = tohsLprojection(i_rgb[i_ptr]);
-            bg_hsl_ptr[i_ptr] = tohsLprojection(med[i_ptr]);
+            // f_hsl_ptr[i_ptr] = tohsLprojection(i_rgb[i_ptr]);
+            // bg_hsl_ptr[i_ptr] = tohsLprojection(med[i_ptr]);
         }
     }
     auto stop = high_resolution_clock::now();
@@ -217,7 +217,7 @@ Mat* PBAS::process(const Mat* frame) {
     medianBlur(F,F,3);
     //cout << duration.count() << "ms" << endl;
 
-    color_normalized_cross_correlation();
+    // color_normalized_cross_correlation();
     //medianBlur(mask_shadows, mask_shadows, 3);
     
     // Mat hsv_frame, hsv_bg;
@@ -254,9 +254,9 @@ Mat* PBAS::process(const Mat* frame) {
     // moveWindow("S frame", 490,380);
     // moveWindow("V frame", 800,380);
 
-    medianBlur(F_shadow_hsv,F_shadow_hsv,9);
+    // medianBlur(F_shadow_hsv,F_shadow_hsv,9);
     
-    this->shadow_corner = shadows_corner(&this->frame, &F);
+    // this->shadow_corner = shadows_corner(&this->frame, &F);
     // final_mask = F&F_shadow_hsv; 
     // return &final_mask;
     
@@ -343,11 +343,11 @@ void PBAS::updateF(int x, int y, int i_ptr) {
     // check if at least K distances are less than R(x,y) => background pixel
     if(k >= K) {
         q[i_ptr] = 0;
-        q_shadow_hsv[i_ptr]=0;
+        // q_shadow_hsv[i_ptr]=0;
         updateB(x, y, i_ptr);
     } else {
-        if(!is_shadow(i_ptr)) q_shadow_hsv[i_ptr] = 255;
-        else q_shadow_hsv[i_ptr] = 0;
+        // if(!is_shadow(i_ptr)) q_shadow_hsv[i_ptr] = 255;
+        // else q_shadow_hsv[i_ptr] = 0;
         q[i_ptr] = 255;
     }
 }
