@@ -1,4 +1,5 @@
 #include <iostream>
+#include <string>
 #include <opencv2/opencv.hpp>
 #include "pbas.cpp"
 
@@ -7,9 +8,29 @@ using namespace cv;
 
 int main(int argc, char const *argv[]) {
     string filename = "videos/camera1.mp4";
-    if(argc == 2) filename = argv[1];
+    if(argc >= 2) filename = argv[1];
+    int N = 30;
+    int K = 3;
+    float R_incdec = 0.05;
+    int R_lower = 18;
+    int R_scale = 5;
+    float T_dec = 0.05;
+    int T_inc = 1;
+    int T_lower = 2;
+    int T_upper = 200;
+    if(argc == 11) {
+        N = stoi(argv[2]);
+        K = stoi(argv[3]);
+        R_incdec = stof(argv[4]);
+        R_lower = stoi(argv[5]);
+        R_scale = stoi(argv[6]);
+        T_dec = stof(argv[7]);
+        T_inc = stoi(argv[8]);
+        T_lower = stoi(argv[9]);
+        T_upper = stoi(argv[10]);
+    }
     VideoCapture cap(filename);
-    PBAS *pbas = new PBAS();
+    PBAS *pbas = new PBAS(N, K, R_incdec, R_lower, R_scale, T_dec, T_inc, T_lower, T_upper);
 
     Mat frame;
     Mat* mask;
