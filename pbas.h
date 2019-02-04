@@ -78,6 +78,7 @@ class PBAS
         ~PBAS();
 
         Mat* process(const Mat* frame);
+        void showCVMat(Mat matrix, bool normalize, string window_name);
 
         Mat frame;
         Mat median;
