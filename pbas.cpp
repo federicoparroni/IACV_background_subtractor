@@ -179,8 +179,8 @@ Mat* PBAS::process(const Mat* frame) {
         //median = frame->clone();
 
         init_Mat(&T, T_lower);
-        init_Mat(&R, R_lower);
-        init_Mat(&d_minavg, 128);
+        init_Mat(&R, 128);
+        // init_Mat(&d_minavg, 128);
     }
 
     int channels = this->frame.channels();
