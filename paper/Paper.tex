@@ -1,0 +1,44 @@
+% Please give the surname of the lead author for the running footer
+\leadauthor{D'Amico, Gabbolini, Parroni}
+
+\title{Robust background subtraction in traffic environments}
+%NM-BC: The title is limited to 10 words (or 90 characters)
+\shorttitle{Background subtraction}
+
+% Use letters for affiliations, numbers to show equal authorship (if applicable) and to indicate the corresponding author
+\author[1 \space *]{D'Amico Edoardo}
+\author[1 \space *]{Gabbolini Giovanni}
+\author[1 \space *]{Parroni Federico}
+
+\affil[1]{Politecnico di Milano, IT}
+\affil[*]{These authors contributed equally.}
+
+\maketitle
+
+\begin{abstract}
+In this paper we present a method for background subtraction with the aim to work on a 24/24h videos scenario, real time, robust to weather changes and capable to keep foreground objects detected for a large amount of time. The work is the base to implement a monitoring system for dangerous event in the road (possible scenario is the monitoring system on highways). The system can be expanded to detect events such as car driving in the wrong direction, car accidents or people crossing the road.
+The model studied is the PBAS (Pixel-Based Adaptive Segmenter): it follows a parametric background modeling paradigm, thus the background is modeled by a history of recently observed pixel
+values. The foreground decision depends on a decision
+threshold. The background update is based on a learning parameter. Both parameters are extended to dynamic per-pixel state variables and introduce dynamic controllers for each of them. Furthermore, both controllers are steered by an estimate of the background dynamics.
+All the hyperparameters of the models have been studied and tuned minutely to accomplish the aimed task.
+\end {abstract}
+
+\begin{keywords}
+    Background subtraction | PBAS | Car | Traffic | Road | Highway | Surveillance | Stationary camera
+\end{keywords}
+
+
+\subsection*{Introduction}
+
+
+\subsection*{Related work}
+
+
+\subsection*{Proposed approach}
+
+
+\subsection*{Experiments}
+
+
+\subsection*{Conclusion}
+

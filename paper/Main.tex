@@ -1,0 +1,42 @@
+%\documentclass[times, twoside, watermark]{paper-StyleBioRxiv}
+%\documentclass[times, twoside]{paper-StyleBioRxivNoLogos}
+\documentclass[times, twoside]{paper-StyleBioRxiv}
+\usepackage{blindtext}
+\usepackage[overload]{textcase}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+
+% \usepackage{layouts}
+% This bit is for the to-do list
+% \usepackage{enumitem,amssymb}
+% \newlist{todolist}{itemize}{2}
+% \setlist[todolist]{label=$\square$}
+% \usepackage{pifont}
+% \newcommand{\cmark}{\ding{51}}%
+% \newcommand{\xmark}{\ding{55}}%
+% \newcommand{\done}{\rlap{$\square$}{\raisebox{2pt}{\large\hspace{1pt}\cmark}}%
+% \hspace{-2.5pt}}
+% \newcommand{\wontfix}{\rlap{$\square$}{\large\hspace{1pt}\xmark}}
+
+\begin{document}
+    
+    \include{Paper}
+    
+    \section*{Bibliography}
+    
+    %\bibliographystyle{bibstyle}
+    \bibliography{bibliography}
+
+\end{document}
+
+
+% Example of bib entry
+% @article{gustafsson2016fast,
+%   title={Fast live-cell conventional fluorophore nanoscopy with ImageJ through super-resolution radial fluctuations},
+%   author={Gustafsson, Nils and Culley, Si{\^a}n and Ashdown, George and Owen, Dylan M and Pereira, Pedro Matos and Henriques, Ricardo},
+%   journal={Nature communications},
+%   volume={7},
+%   pages={12471},
+%   year={2016},
+%   publisher={Nature Publishing Group}
+% }
