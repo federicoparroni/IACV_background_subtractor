@@ -11,7 +11,10 @@ FPS = 30
 VIDEO_CODEC = cv2.VideoWriter_fourcc(*'mp4v')
 VIDEO_CHUNKS_FRAMES = 30*(FPS*60)    # save video at chunks of frames (30 min @ 25 fps)
 
-url = "https://www.youtube.com/watch?v=1EiC9bvVGnk"
+# url = "https://www.youtube.com/watch?v=1EiC9bvVGnk"
+# url = 'https://www.youtube.com/watch?v=ZTa4ap3i278'
+print('Insert youtube video url: ')
+url = input()
 video = pafy.new(url)
 print('> Info:')
 print(video)
@@ -25,7 +28,11 @@ for s in streams:
     index += 1
 
 print('Choose video resolution: ', end='')
-choice = int(input()[0])
+try:
+    choice = int(input()[0])
+except Exception as exc:
+    print('Wrong input, exiting...')
+    exit(1)
 
 stream = streams[choice]
 videourl = stream.url
@@ -41,7 +48,7 @@ def get_frame(capture):
     return ret, frame
 
 def print_progress(current, tot, prefix=''):
-    scale = 30 / tot
+    scale = 60 / tot
     left = math.floor((tot-current) * scale)
     curr = math.ceil(current * scale)
     print('{}: |={}{}|'.format(prefix, '='*curr, ' '*left), end='\r')
