@@ -167,7 +167,7 @@ int main(int argc, char const *argv[]) {
         if (save_frames) {
             act_seconds += 1 / fps;
             cout << act_seconds << endl;
-            if (act_seconds >= get<0>(time_slots[count_time_slot]) && act_seconds <= get<1>(time_slots[count_time_slot])){
+            if (act_seconds >= get<0>(time_slots[count_time_slot])*60 && act_seconds <= get<1>(time_slots[count_time_slot])*60){
                 partial_seconds += 1 / fps;
                 if(partial_seconds >= capture_every){
                     cout << "capturing frame" << endl;
@@ -178,7 +178,7 @@ int main(int argc, char const *argv[]) {
                     partial_seconds = 0;
                 }
             }
-            else if (act_seconds > get<1>(time_slots[count_time_slot]) && count_time_slot < time_slots.size() - 1){
+            else if (act_seconds > get<1>(time_slots[count_time_slot])*60 && count_time_slot < time_slots.size() - 1){
                 count_time_slot++;
                 act_subfolder_base = folder_base + "/" + to_string(get<0>(time_slots[count_time_slot])) + "_" + to_string(get<1>(time_slots[count_time_slot]));
                 mkdir(act_subfolder_base.c_str(), 0777);
