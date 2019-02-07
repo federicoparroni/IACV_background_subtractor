@@ -16,7 +16,7 @@
 \maketitle
 
 \begin{abstract}
-In this paper we present a method for background subtraction with the aim to work on a 24/24h videos
+\textit{	Abstract-} In this paper we present a method for background subtraction with the aim to work on a 24/24h videos
 scenario, real time, robust to weather changes and capable to keep foreground objects detected for a
 large amount of time. The work is the base to implement a monitoring system for dangerous event in
 the road (possible scenario is the monitoring system on highways). The system can be expanded to
@@ -68,8 +68,53 @@ One of the most prominent and most widely used methods are those based on Gaussi
 
 
 \subsection*{Proposed approach}
+To solve the presented problem we have studied deeply the PBAS algorithm, how it works, and how the hyperparameters could change the behaviour of it. After the studying of the algorithm has been chosen the parameters that have achived the better performance in our scenario. At the end have been studied how to enhanche the performance of the algorithm solving the issue of the presence of the shadows in the video, using techniques of shadows removal.
+\subsubsection{PBAS algorithm}
 
+\begin{figure*}
+  \includegraphics[width=\textwidth]{Figures/PBAS_state_machine.png}
+  \caption{PBAS state machine.}
+\end{figure*}
 
+This section describes the Pixel-Based Adaptive Segmenter, which follows a non-parametric paradigm. Thus,
+every pixel x i is modeled by an array of recently observed background values. The method consists of several components which are depicted as a state machine in Figure 1. As a central component, the decision block decides for or against foreground
+based on the current image and a background model $B(x_i)$. This decision is based on the per-pixel threshold $R(x_i)$. Moreover, the background model has to be updated over time in order to allow for gradual background changes. In the model, this update depends on a per-pixel learning parameter $T(x_i)$. \newline The background model $B(x_i)$ is defined by an array of N recently observed pixel values:
+\begin{equation}
+\mathbf{B}(x_i) = \{B_1(x_i),...,B_k(x_i),...,B_N(x_i)\}
+\end{equation}
+A pixel $x_i$ is decided to belong to the background, if its
+pixel value $I(x_i) $ is closer than a certain decision threshold
+$R(x_i)$ to at least $K$ of the $N$ background values. Thus,
+the foreground segmentation mask is calculated as:
+\begin{equation}
+F(x_i) = \begin{cases} 1,& \#\{dist(I(x_i), B_k(x_i)) < R(x_i)\} < K \\0 &else\end{cases}
+\end{equation}
+$F = 1$ implies foreground. The decision involves two parameters: (1) The distance threshold $R(x_i)$,which is defined for each pixel separately and which can change dynamically; and (2) the minimum number $K$, which is a fixed global parameter.\newline
+The background model is only updated for those pixels that
+are currently background (i.e. $F(x_i) = 0$).
+Updating means that for a certain index $k \in \{1...N \}$(chosen uniformly at random), the corresponding background model
+value $B_k(x_i)$ is replaced by the current pixel value $I(x_i)$.
+This allows the current pixel value to be ”learned” into
+the background model. This update, however, is only performed with probability $p = 1/T(x_i)$.Otherwise no update
+is carried out at all. Therefore, the parameter $T(x_i)$ defines
+the update rate. The higher $T(x_i)$ the less likely a pixel
+will be updated.
+Is also update (with probability $p = 1/T(x_i)$) a randomly chosen neighboring pixel $y i \in N(x_i)$. Thus, the
+background model $B_k(y_i)$ at this neighboring pixel is replaced by its current pixel value $V(y_i)$. \newline
+To change the decision treshold $R(x_i)$ is saved an array of recently observed pixel values in the background model $B(x_i)$, we also create an array $\mathbf{D}(x_i) = \{D_1(x_i ),...,D_N(x_i)\}$ of minimal decision distances. Whenever an update of $B_k(x_i)$ is carried out, the currently observed minimal distance $d_{min}(x_i) = min_k dist(I(x_i), B_k(x_i))$ is written to this array: $D_k(x_i) \leftarrow d_{min}(x_i)$. Thus, a history of minimal decision distances is created. The average of these values $\overline{d}_{min}(x_i) = \frac{1}{N} \sum_k D_k(x_i)$ is a measure of the background dynamics. Thanks to that
+the decision threshold can be dynamically adapted as follows:
+\begin{equation}
+R(x_i)=\begin{cases} R(x_i)\cdot(1-R{inc/dec}) &if\ R(x_i)> \overline{d}_{min}(x_i)\cdot R_{scale} \\ R(x_i)\cdot (1+R{inc/dec}) &else  \end{cases}
+\end{equation}
+Here, $R_{inc/dec}$, $R_{scale}$ are fixed parameters. This can be seen as a dynamic controller for the state variable $R(x_i)$.
+\newline
+Independent of the foreground state $F(x_i)$, every object will be merged into the background depending on the learning parameter
+$T(x_i)$. To alleviate the problem, the idea is to introduce a
+(second) dynamic controller for $T(x_i)$ following the assumption that pixels are mostly wrongly classified as foreground in areas of high dynamic background the strength of the adjustment in the controller can be adapted using the dynamic estimator $\overline{d}_{min}(x_i)$. So can be defined:
+\begin{equation}
+T(x_i)=\begin{cases} T(x_i)+\frac{T_{inc}}{\overline{d}_{min}(x_i)} &if \ F(x_i)=1 \\ T(x_i)-\frac{T_{inc}}{\overline{d}_{min}(x_i)} &if \ F(x_i)=0 \end{cases}
+\end{equation}
+$T_{inc}$ and $T_{dec}$ are fixed parameters. Are also defined $T_{lower}$ and $T_{upper}$ such that the values can not go out of a specific bound. 
 \subsection*{Experiments}
 
 
