@@ -34,3 +34,8 @@ paper/Paper\.log
 
 Jackson Hole Wyoming
 videos/streetLight
+*.bbl
+*.blg
+*.aux
+*.gz
+*.xwm
