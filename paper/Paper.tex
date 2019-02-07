@@ -34,7 +34,7 @@ All the hyperparameters of the models have been studied and tuned minutely to ac
 \subsection*{Related work}
 Over the recent past, a multitude of algorithms and methods for background modeling have been developed.
 One of the most prominent and most widely used methods are those based on Gaussian Mixture Models (GMM)
-???. Here, each pixels is modeled as a mixture of weighted Gaussian distributions. Pixels, which are detected as background are used to improve the Gaussian mixtures by an iterative update rule. A very important non-parametric method is the ViBe ???. Each pixel in the background model is defined by a history of the N most recent image values at each pixel and uses a random scheme to update them. More over, updated pixels can ”diffuse” their current pixel value into neighboring pixel using another random selection method.The preceding scheme is very similar to the approach followed by the PBAS algorithm ???. It can be categorized as a non-parametric method, since it  uses a history of N image values as the background model, and uses a random update rule similar to the one used by the ViBe algorithm. However, in Vibe, the randomness parameters as well as the decision threshold are fixed for all pixels. In contrast, in the PBAS algorithm these values are not treated as parameters, but instead as adaptive state variables, which can dynamically change over time for each pixel separately.
+\cite{gmm}. Here, each pixels is modeled as a mixture of weighted Gaussian distributions. Pixels, which are detected as background are used to improve the Gaussian mixtures by an iterative update rule. A very important non-parametric method is the ViBe ???. Each pixel in the background model is defined by a history of the N most recent image values at each pixel and uses a random scheme to update them. More over, updated pixels can ”diffuse” their current pixel value into neighboring pixel using another random selection method.The preceding scheme is very similar to the approach followed by the PBAS algorithm ???. It can be categorized as a non-parametric method, since it  uses a history of N image values as the background model, and uses a random update rule similar to the one used by the ViBe algorithm. However, in Vibe, the randomness parameters as well as the decision threshold are fixed for all pixels. In contrast, in the PBAS algorithm these values are not treated as parameters, but instead as adaptive state variables, which can dynamically change over time for each pixel separately.
 
 
 \subsection*{Proposed approach}
@@ -44,4 +44,5 @@ One of the most prominent and most widely used methods are those based on Gaussi
 
 
 \subsection*{Conclusion}
+
 

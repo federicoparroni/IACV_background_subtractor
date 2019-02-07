@@ -306,17 +306,17 @@
 \def\footernote#1{\markboth{#1}{#1}}
 
 % %% bibliography
-\RequirePackage{chapterbib}
-\RequirePackage[sectionbib,numbers,sort&compress,merge,round]{natbib}
-\setlength{\bibsep}{0.0pt}
-\bibliographystyle{bibstyle}
-\renewcommand{\bibsection}{} % Remove header
-\renewcommand\bibfont{\normalfont\sffamily\fontsize{6}{8}\selectfont} % set font to be sans serif
-
-\makeatletter 
-\renewcommand\@biblabel[1]{ #1.} % Remove brackets from label
-\def\tagform@#1{\maketag@@@{\bfseries(\ignorespaces#1\unskip\@@italiccorr)}}
-\renewcommand{\eqref}[1]{\textup{{\normalfont Eq.~(\ref{#1}}\normalfont)}}
+%\RequirePackage{chapterbib}
+%\RequirePackage[sectionbib,numbers,sort&compress,merge,round]{natbib}
+%\setlength{\bibsep}{0.0pt}
+%\bibliographystyle{bibstyle}
+%\renewcommand{\bibsection}{} % Remove header
+%\renewcommand\bibfont{\normalfont\sffamily\fontsize{6}{8}\selectfont} % set font to be sans serif
+%
+%\makeatletter 
+%\renewcommand\@biblabel[1]{ #1.} % Remove brackets from label
+%\def\tagform@#1{\maketag@@@{\bfseries(\ignorespaces#1\unskip\@@italiccorr)}}
+%\renewcommand{\eqref}[1]{\textup{{\normalfont Eq.~(\ref{#1}}\normalfont)}}
 % \makeatother
 
 %% Title
