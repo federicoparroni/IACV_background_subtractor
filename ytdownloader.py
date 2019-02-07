@@ -4,6 +4,7 @@ import os
 import math
 # import time
 
+
 #url = "https://www.youtube.com/watch?v=Zwt3ZOej3_U"
 DOWNLOAD_FOLDER = 'dataset'         # download folder
 SAVE_VIDEO = True                   # set to false to save single frames
@@ -68,6 +69,7 @@ ret = True
 frames_count = 0
 video_chunk = 0
 while True:
+
     if SAVE_VIDEO:
         current_frame = frames_count % VIDEO_CHUNKS_FRAMES
         # check if a new chunk must be created

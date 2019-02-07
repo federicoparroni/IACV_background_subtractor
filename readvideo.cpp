@@ -51,15 +51,14 @@ int main(int argc, char const *argv[]) {
         moveWindow("Frame", 20,20);
 
         imshow("Mask", *mask);
+
         // moveWindow("Mask", 372,20);
 
         moveWindow("Mask", 490, 20);
 
+
         // imshow("Shadows CNCC", pbas->shadow_cncc);
         // moveWindow("Shadows CNCC", 750,20);
-
-        // imshow("shadow_hsv", pbas->F_shadow_hsv);
-        // moveWindow("Shadows hsv", 20,400);
 
         // imshow("Shadows CNCC", pbas->shadow_cncc);
         // moveWindow("Shadows CNCC", 750,20);
