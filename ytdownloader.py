@@ -14,7 +14,7 @@ VIDEO_CHUNKS_FRAMES = 30*(FPS*60)    # save video at chunks of frames (30 min @ 
 
 # url = "https://www.youtube.com/watch?v=1EiC9bvVGnk"
 # url = 'https://www.youtube.com/watch?v=ZTa4ap3i278'
-print('Insert youtube video url: ')
+print('\nInsert youtube video url: ')
 url = input()
 video = pafy.new(url)
 print('> Info:')
