@@ -17,3 +17,25 @@ readvideo
 fica\.jpg
 
 videos/railRoadCrossing\.mp4
+
+paper/Main\.aux
+
+paper/Main\.log
+
+paper/Main\.pdf
+
+paper/Main\.synctex\.gz
+
+paper/Main\.xwm
+
+paper/Paper\.aux
+
+paper/Paper\.log
+
+Jackson Hole Wyoming
+videos/streetLight
+*.bbl
+*.blg
+*.aux
+*.gz
+*.xwm

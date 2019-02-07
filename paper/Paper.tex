@@ -1,0 +1,78 @@
+% Please give the surname of the lead author for the running footer
+\leadauthor{D'Amico, Gabbolini, Parroni}
+
+\title{Robust background subtraction in traffic environments}
+%NM-BC: The title is limited to 10 words (or 90 characters)
+\shorttitle{Background subtraction}
+
+% Use letters for affiliations, numbers to show equal authorship (if applicable) and to indicate the corresponding author
+\author[1 \space *]{D'Amico Edoardo}
+\author[1 \space *]{Gabbolini Giovanni}
+\author[1 \space *]{Parroni Federico}
+
+\affil[1]{Politecnico di Milano, IT}
+\affil[*]{These authors contributed equally.}
+
+\maketitle
+
+\begin{abstract}
+In this paper we present a method for background subtraction with the aim to work on a 24/24h videos
+scenario, real time, robust to weather changes and capable to keep foreground objects detected for a
+large amount of time. The work is the base to implement a monitoring system for dangerous event in
+the road (possible scenario is the monitoring system on highways). The system can be expanded to
+detect events such as car driving in the wrong direction, car accidents or people crossing the road.
+The model studied is the PBAS (Pixel-Based Adaptive Segmenter): it follows a parametric background
+modeling paradigm, thus the background is modeled by a history of recently observed pixel values.
+The foreground decision depends on a decision threshold. The background update is based on a learning
+parameter. Both parameters are extended to dynamic per-pixel state variables and introduce dynamic
+controllers for each of them. Furthermore, both controllers are steered by an estimate of the background
+dynamics. All the hyperparameters of the models have been studied and tuned minutely to accomplish the
+aimed task.
+\end {abstract}
+
+\begin{keywords}
+    Background subtraction | PBAS | Car | Traffic | Road | Highway | Surveillance | Stationary camera
+\end{keywords}
+
+
+\subsection*{Introduction}
+Background subtraction and foreground detection are the basic tasks of many real application systems,
+for example, surveillance systems, autonomous vehicles, semantic image analysis. Background subtraction
+consists in finding a category for every pixel in a single or (like in this case) in a frames sequence
+of a video and saying if that pixels are part of background or foreground. At the end, the algorithm take as
+as input a video and output a binary mask, where 1s are foreground pixels and 0 background pixels.
+We restricted our domain to traffic monitoring, in particular this work should put the basis for an automated
+tool to identify cars and detect anomalies in highways and roads 24/24h (e.g. car accidents,
+traffic jam, wrong-direction driving) using a standard RGB stationary camera.
+Critical aspects that must be taken into account while
+developing such algorithm are a lot, first of all, variable and bad weather conditions and illumination
+changes. In fact, it is very hard to distinguish moving objects in presence of heavy rain, fog or snow.
+Also during night the environmental situation varies a lot from the day and our algorithm has to adapt
+continuosly due to this facts. Other problems that we faced are shadows and intermittent object motion.
+From the majority of the current algorithms, shadows are treated as foreground because they move along with
+objects; a little number of them adopts a 3-class classification (background, foreground, shadow). We
+decided to provide a binary classification, considering shadows as part of the background. With regards to
+the latter problem, here the challenge is to correctly detect an initially stationary object that begins to
+move or when an object that was static starts moving again. We fine-tuned some parameters to make sure
+that a moving car that stops after a while will be classified as foreground for a long time before turning
+into background, while the opposite event (from static to moving) is easier to handle.
+The entire algorithm has been implemented in C++, since compiled code performances are fundamental to
+allow the system to work in real-time. In \cite{pbasandsceneanalysisfpga}, we can find an integration of the basic algorithm in
+a FPGA device, which exploit and hardware implementation to reduce a lot the computational time.
+
+
+\subsection*{Related work}
+Over the recent past, a multitude of algorithms and methods for background modeling have been developed.
+One of the most prominent and most widely used methods are those based on Gaussian Mixture Models (GMM)
+\cite{gmm}. Here, each pixels is modeled as a mixture of weighted Gaussian distributions. Pixels, which are detected as background are used to improve the Gaussian mixtures by an iterative update rule. A very important non-parametric method is the ViBe \cite{vibe}. Each pixel in the background model is defined by a history of the N most recent image values at each pixel and uses a random scheme to update them. More over, updated pixels can ”diffuse” their current pixel value into neighboring pixel using another random selection method.The preceding scheme is very similar to the approach followed by the PBAS algorithm ???. It can be categorized as a non-parametric method, since it  uses a history of N image values as the background model, and uses a random update rule similar to the one used by the ViBe algorithm. However, in Vibe, the randomness parameters as well as the decision threshold are fixed for all pixels. In contrast, in the PBAS algorithm these values are not treated as parameters, but instead as adaptive state variables, which can dynamically change over time for each pixel separately.
+
+
+\subsection*{Proposed approach}
+
+
+\subsection*{Experiments}
+
+
+\subsection*{Conclusion}
+
+

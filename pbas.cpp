@@ -15,7 +15,7 @@ using namespace cv;
 
 
 PBAS::PBAS() {
-    N = 5;
+    N = 30;
     K = 3;
     R_incdec = 0.05;
     R_lower = 18;
@@ -155,13 +155,15 @@ Mat* PBAS::process(const Mat* frame) {
     // B, D, d_minavg initialization
     if (B.size() == 0) {
         for(int i=0; i<N; i++) {
-            // Mat b_elem(h, w, CV_8UC1);
-            // randu(b_elem, 0, 255);
-            B.push_back(this->frame.clone());
+            Mat b_elem(h, w, CV_8UC1);
+            randu(b_elem, 0, 255);
+            B.push_back(b_elem);
+            //B.push_back(this->frame.clone());
 
-            // Mat b_grad_elem(h, w, CV_8UC1);
-            // randu(b_grad_elem, 0, 255);
-            B_grad.push_back(frame_grad.clone());
+            Mat b_grad_elem(h, w, CV_8UC1);
+            randu(b_grad_elem, 0, 255);
+            B_grad.push_back(b_grad_elem);
+            //B_grad.push_back(frame_grad.clone());
 
             Mat d_elem = Mat::zeros(h, w, CV_8UC1);
             D.push_back(d_elem);
@@ -215,7 +217,7 @@ Mat* PBAS::process(const Mat* frame) {
     auto duration = duration_cast<milliseconds>(stop - start);
     
     medianBlur(F,F,3);
-    //cout << duration.count() << "ms" << endl;
+    cout << duration.count() << "ms" << endl;
 
     // color_normalized_cross_correlation();
     //medianBlur(mask_shadows, mask_shadows, 3);
@@ -260,7 +262,9 @@ Mat* PBAS::process(const Mat* frame) {
     // final_mask = F&F_shadow_hsv; 
     // return &final_mask;
 
-    showCVMat(R, true, "fica");
+    showCVMat(R, true, "R");
+    showCVMat(T, true, "T");
+    showCVMat(d_minavg, true, "d_minavg");
 
     return &F;
 }
