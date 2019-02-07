@@ -4,6 +4,7 @@ import os
 import math
 # import time
 
+
 #url = "https://www.youtube.com/watch?v=Zwt3ZOej3_U"
 DOWNLOAD_FOLDER = 'dataset'         # download folder
 SAVE_VIDEO = True                   # set to false to save single frames
@@ -14,21 +15,6 @@ VIDEO_CHUNKS_FRAMES = 30*(FPS*60)    # save video at chunks of frames (30 min @ 
 url = "https://www.youtube.com/watch?v=1EiC9bvVGnk"
 video = pafy.new(url)
 print('> Info:')
-print(video)
-
-# best = video.getbest(preftype="mp4")
-print("> Streams:")
-streams = [s for s in video.streams if s.extension == 'mp4']
-index = 0
-for s in streams:
-    print('[{}]'.format(index), s.resolution, s.extension, s.get_filesize())
-    index += 1
-
-print('Choose video resolution: ', end='')
-choice = int(input()[0])
-
-stream = streams[choice]
-videourl = stream.url
 
 filename_max_length = min(20, len(video.title))
 video_folder = "{}/{}".format(DOWNLOAD_FOLDER, video.title[0:filename_max_length])
@@ -61,6 +47,7 @@ ret = True
 frames_count = 0
 video_chunk = 0
 while True:
+
     if SAVE_VIDEO:
         current_frame = frames_count % VIDEO_CHUNKS_FRAMES
         # check if a new chunk must be created
