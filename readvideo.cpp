@@ -3,6 +3,7 @@
 #include <opencv2/opencv.hpp>
 #include <sys/stat.h> 
 #include "pbas.cpp"
+#include <limits>
 
 using namespace std;
 using namespace cv;
@@ -22,19 +23,19 @@ void go_to(int s){
             break;
         case 1:
             state = 1;
-            cout << "put starting minute in which to save (x) or enter to go ahead" << endl;
+            cout << "put minute in which start saving or enter to go ahead" << endl;
             break;
         case 2:
             state = 2;
-            cout << "put ending minute in which stop to save (x)" << endl;
+            cout << "put minute in which to stop saving or enter to record till the end" << endl;
             break;
         case 3:
             state = 3;
-            cout << "save a frame every? (x, in seconds). enter for default value 1" << endl;
+            cout << "save a frame every? (x, in seconds). enter for default value 60" << endl;
             break;
         case 4:
             state = 4;
-            cout << "select a folder name in which to save (enter for a default name)" << endl;
+            cout << "folder name where to save: (enter for a default name)" << endl;
             break;
     }
 }
@@ -65,7 +66,8 @@ int process(string & line){
             break;
         case 2:
             if(line == ""){
-                go_to(2);
+                time_slots.push_back(make_tuple(starting_minute, numeric_limits<int>::max()/60));
+                go_to(1);
             }
             else{
                 time_slots.push_back(make_tuple(starting_minute, stoi(line)));
@@ -74,7 +76,7 @@ int process(string & line){
             break;
         case 3:
             if(line == ""){
-                capture_every = 1;
+                capture_every = 60;
                 go_to(4);
             }
             else{
@@ -148,6 +150,7 @@ int main(int argc, char const *argv[]) {
         mkdir(act_subfolder_base.c_str(), 0777);
     }
 
+    // process
     while(1) {
         cap >> frame;
         if (frame.empty()) break;
@@ -184,7 +187,6 @@ int main(int argc, char const *argv[]) {
                 mkdir(act_subfolder_base.c_str(), 0777);
             }
         }
-
 
         // imshow("Shadows CNCC", pbas->shadow_cncc);
         // moveWindow("Shadows CNCC", 750,20);
