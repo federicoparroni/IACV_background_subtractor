@@ -43,3 +43,7 @@ videos/streetLight
 paper/texput\.log
 
 paper/Bibliography\.aux
+
+videos/
+
+frames/
