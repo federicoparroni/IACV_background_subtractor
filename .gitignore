@@ -39,3 +39,11 @@ videos/streetLight
 *.aux
 *.gz
 *.xwm
+
+paper/texput\.log
+
+paper/Bibliography\.aux
+
+videos/
+
+frames/
