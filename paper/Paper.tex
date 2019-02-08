@@ -141,49 +141,53 @@ $N$ represents how many matrices are kept in memory to model the background.
 Each of them stores the history of pixels values.
 The greater, the more complex background can be handled but at the cost of heavier
 computation. At $N=35$, experimental results show that performance saturates.
-\begin{figure*}[!t]
+\begin{figure}[!t]
 \centering
 \subfloat[][N = 2]{
-    \includegraphics[width=0.32\textwidth]{Figures/N2.jpg}
+    \includegraphics[width=0.45\textwidth]{Figures/N2.jpg}
     %\label{fig:N2}
 }
+\newline
 \subfloat[][N = 10]{
-    \includegraphics[width=0.32\textwidth]{Figures/N10.jpg}
+    \includegraphics[width=0.45\textwidth]{Figures/N10.jpg}
 }
+\newline
 \subfloat[][N = 20]{
-    \includegraphics[width=0.32\textwidth]{Figures/N20.jpg}
+    \includegraphics[width=0.45\textwidth]{Figures/N20.jpg}
 }
 \caption{We can see the poor mask of the cars on the left road when $N=2$, and the
 accurate mask of the lines on the front right when $N=20$.}
-\end{figure*}
+\end{figure}
 
 
 \subsection*{K}
 $K$ tells the number of samples from $B$ that have to be closer than $R$ in order to
 classify the pixel as background. The higher, the more difficult for a pixel to be
 classified as background.
-\begin{figure*}[!t]
+\begin{figure}[!t]
 \centering
 \subfloat[][K = 1]{
-    \includegraphics[width=0.32\textwidth]{Figures/K1.jpg}
+    \includegraphics[width=0.45\textwidth]{Figures/K1.jpg}
 }
+\newline
 \subfloat[][K = 2]{
-    \includegraphics[width=0.32\textwidth]{Figures/K2.jpg}
+    \includegraphics[width=0.45\textwidth]{Figures/K2.jpg}
 }
+\newline
 \subfloat[][K = 4]{
-    \includegraphics[width=0.32\textwidth]{Figures/K4.jpg}
+    \includegraphics[width=0.45\textwidth]{Figures/K4.jpg}
 }
 \caption{Setting $K$ too high brings to classify many pixels as foreground, with the risk of false positives.}
-\end{figure*}
+\end{figure}
 
 \subsection*{T max}
-$T_max$ controls the lowest probability of updating a pixel and putting it the
+$T_{max}$ controls the lowest probability of updating a pixel and putting it the
 background model $B$.
 
 
 \subsection*{R}
 Eq ?????????? is similar to the equation of a pure proportional controller.
-In this case the $R(x,y)$ has to follow $d_minavg(x,y) * R_scale$. So:
+In this case the $R(x,y)$ has to follow $d_{minavg}(x,y) * R_{scale}$. So:
 \begin{itemize}
     \item $R_{incdec}$: setting too high lead to oscillation around the target and if
     set too high leads to divergence. The default value is 0.05 which leads to fast
@@ -200,18 +204,20 @@ In this case the $R(x,y)$ has to follow $d_minavg(x,y) * R_scale$. So:
     high it will reduce true positives. So the choice of it should be lead by the
     video quality, more than the application domain.
 \end{itemize}
-\begin{figure*}[!t]
+\begin{figure}[!t]
     \centering
     \subfloat[][$R_{scale}$ = 5]{
-        \includegraphics[width=0.32\textwidth]{Figures/R_scale5.jpg}
+        \includegraphics[width=0.45\textwidth]{Figures/R_scale5.jpg}
     }
+    \newline
     \subfloat[][$R_{scale}$ = 15]{
-        \includegraphics[width=0.32\textwidth]{Figures/R_scale15.jpg}
+        \includegraphics[width=0.45\textwidth]{Figures/R_scale15.jpg}
     }
+    \newline
     \subfloat[][$R_{scale}$ = 50]{
-        \includegraphics[width=0.32\textwidth]{Figures/R_scale50.jpg}
+        \includegraphics[width=0.45\textwidth]{Figures/R_scale50.jpg}
     }
-\end{figure*}
+\end{figure}
 As we see, as $R_{scale}$ grows the tree leaves that are waved by the wind are not detected
 anymore as foreground but also a part of the car is lost.
 
@@ -229,21 +235,24 @@ As we see, the image gradients give a good cue to distinguish the street from th
 street). So alpha should be set high, in order to take into consideration this fact.
 But notice that setting too high will lead to noisy masks, especially with noisy
 videos that have small variations of the gradient from frame to frame.
-\begin{figure*}[!t]
+\begin{figure}[!t]
     \centering
     \subfloat[][$\alpha$ = 0]{
-        \includegraphics[width=0.32\textwidth]{Figures/alpha0.jpg}
+        \includegraphics[width=0.45\textwidth]{Figures/alpha0.jpg}
     }
+    \newline
     \subfloat[][$\alpha$ = 10]{
-        \includegraphics[width=0.32\textwidth]{Figures/alpha10.jpg}
+        \includegraphics[width=0.45\textwidth]{Figures/alpha10.jpg}
     }
+    \newline
     \subfloat[][$\alpha$ = 20]{
-        \includegraphics[width=0.32\textwidth]{Figures/alpha20.jpg}
+        \includegraphics[width=0.45\textwidth]{Figures/alpha20.jpg}
     }
+    \newline
     \subfloat[][$\alpha$ = 50]{
-        \includegraphics[width=0.32\textwidth]{Figures/alpha50.jpg}
+        \includegraphics[width=0.45\textwidth]{Figures/alpha50.jpg}
     }
-\end{figure*}
+\end{figure}
 
 
 \subsection*{Conclusion}
