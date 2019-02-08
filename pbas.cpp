@@ -81,7 +81,7 @@ float PBAS::distance(uint8_t a, uint8_t b) {
     return abs(a-b);
 }
 
-float PBAS::distance(uint8_t p, uint8_t p_grad, uint8_t g, uint8_t g_grad) {
+double PBAS::distance(uint8_t p, double p_grad, uint8_t g, double g_grad) {
     return (this->alpha/this->I_m) * abs((int)p_grad - (int)g_grad) + abs((int)p - (int)g); 
 }
 
@@ -152,8 +152,8 @@ Mat* PBAS::process(const Mat* frame) {
     this->frame_grad = gradient_magnitude(&this->frame);
     this->I_m = mean(this->frame_grad).val[0];
 
-    showCVMat(this->frame_grad, true, "grad");
-    moveWindow("grad", 900, 900);
+    // showCVMat(this->frame_grad, true, "grad");
+    // moveWindow("grad", 900, 900);
 
     // B, D, d_minavg initialization
     if (B.size() == 0) {
@@ -195,7 +195,7 @@ Mat* PBAS::process(const Mat* frame) {
     auto start = high_resolution_clock::now();
     for(int x=0; x < nRows; ++x) {
         this->i = this->frame.ptr<uint8_t>(x);
-        this->i_grad = frame_grad.ptr<uint8_t>(x);
+        this->i_grad = frame_grad.ptr<double>(x);
         this->q = F.ptr<uint8_t>(x);
         this->q_shadow_hsv = F_shadow_hsv.ptr<uint8_t>(x);
         this->r = R.ptr<float>(x);
@@ -220,7 +220,7 @@ Mat* PBAS::process(const Mat* frame) {
     auto duration = duration_cast<milliseconds>(stop - start);
     
     medianBlur(F,F,3);
-    cout << duration.count() << "ms" << endl;
+    //cout << duration.count() << "ms" << endl;
 
     // color_normalized_cross_correlation();
     //medianBlur(mask_shadows, mask_shadows, 3);
@@ -267,11 +267,11 @@ Mat* PBAS::process(const Mat* frame) {
 
     // showCVMat(T, true, "T");
 
-    showCVMat(R, true, "R");
-    moveWindow("R", 20, 340);
+    // showCVMat(R, true, "R");
+    // moveWindow("R", 20, 340);
 
-    showCVMat(d_minavg, true, "d_minavg");
-    moveWindow("d_minavg", 420, 340);
+    // showCVMat(d_minavg, true, "d_minavg");
+    // moveWindow("d_minavg", 420, 340);
 
 
     return &F;
@@ -306,71 +306,6 @@ void PBAS::showCVMat(Mat matrix, bool normalize, string window_name){
     imshow(window_name, matrix_p);
 }
 
-// project a HLS pixel into the euclidean h,s,L space
-Vec3d PBAS::tohsLprojection(Vec3b pixel) {
-    Mat rgb_container(1,1,CV_8UC3, &pixel);
-    Mat hsl_container;
-    cvtColor(rgb_container, hsl_container, COLOR_RGB2HLS);
-    Vec3b hsl_pixel = hsl_container.at<Vec3b>(0,0);
-
-    Vec3d res;
-    double H = hsl_pixel[0] * M_PI / 90;
-    uint8_t L = hsl_pixel[1];
-    uint8_t S = hsl_pixel[2];
-    res[0] = S * cos(H);
-    res[1] = S * sin(H);
-    res[2] = L;
-    return res;
-}
-
-double PBAS::hsLproduct(Vec3b p1, Vec3b p2) {
-    int dot1 = p1[0]*p2[0];
-    int dot2 = p1[1]*p2[1];
-    return max(0,dot1+dot2) + p1[2]*p2[2];
-}
-
-void PBAS::color_normalized_cross_correlation() {
-    int M = 7, N = 7; int MN = M*N;
-    int halfM = (M-1)/2; int halfN = (N-1)/2;
-    float cncc_threshold = 0.9;
-
-    shadow_cncc = Mat::zeros(h, w, CV_8UC1);
-
-    for(int x=halfM; x<this->h - halfM; ++x) {
-    for(int y=halfN; y<this->w - halfN; ++y) {
-        if(F.at<uint8_t>(x,y) != 0) {
-            // Vec3b *f = frame_hsl.ptr<Vec3b>(0);
-            // Vec3b *b = bg_hsl.ptr<Vec3b>(0);
-            double cncc = 0;
-            double L_avg_frame = 0; double L_avg_bg = 0;
-            double var_f = 0; double var_bg = 0;
-            for(int i=x-halfM; i<x+halfM; ++i) {
-            for(int j=y-halfN; j<y+halfN; ++j) {
-                Vec3d pixelF_ij = frame_hsl.at<Vec3d>(i,j);
-                Vec3d pixelB_ij = bg_hsl.at<Vec3d>(i,j);
-                cncc += hsLproduct(pixelF_ij, pixelB_ij);
-                L_avg_frame += pixelF_ij[2];
-                L_avg_bg += pixelB_ij[2];
-                var_f += hsLproduct(pixelF_ij, pixelF_ij);
-                var_bg += hsLproduct(pixelB_ij, pixelB_ij);
-            }
-            }
-            L_avg_frame /= MN;
-            L_avg_bg /= MN;
-            var_f -= MN * L_avg_frame * L_avg_frame;
-            var_bg -= MN * L_avg_bg * L_avg_bg;
-
-            cncc -= MN * L_avg_frame * L_avg_bg;
-            cncc /= sqrt(var_f * var_bg);
-
-            if(cncc < cncc_threshold) {
-                shadow_cncc.at<uint8_t>(x,y) = 255;
-            }
-        }
-    }
-    }
-    return;
-}
 
 void PBAS::updateF(int x, int y, int i_ptr) {
     //c = 0
@@ -378,7 +313,7 @@ void PBAS::updateF(int x, int y, int i_ptr) {
     int k = 0;       // number of lower-than-R distances for the channel 'c'
     int j = 0;
     while(j < N && k < K) {
-        if(distance(i[i_ptr], i_grad[i_ptr], B[j].at<uint8_t>(x,y), B_grad[j].at<uint8_t>(x,y)) < r[i_ptr]) {
+        if(distance(i[i_ptr], i_grad[i_ptr], B[j].at<uint8_t>(x,y), B_grad[j].at<float>(x,y)) < r[i_ptr]) {
             k++;
         }
         j++;
@@ -521,6 +456,10 @@ void PBAS::updateMedian(int col){
     }
 }
 
+
+// ================
+// +++  SHADOWS
+
 int PBAS::is_shadow(int col){
     Vec3b frame_rgb_pixel = i_rgb[col];
     Vec3b median_rgb_pixel = med[col];
@@ -546,4 +485,70 @@ int PBAS::is_shadow(int col){
         return 1;
     }
     return 0;
+}
+
+// project a HLS pixel into the euclidean h,s,L space
+Vec3d PBAS::tohsLprojection(Vec3b pixel) {
+    Mat rgb_container(1,1,CV_8UC3, &pixel);
+    Mat hsl_container;
+    cvtColor(rgb_container, hsl_container, COLOR_RGB2HLS);
+    Vec3b hsl_pixel = hsl_container.at<Vec3b>(0,0);
+
+    Vec3d res;
+    double H = hsl_pixel[0] * M_PI / 90;
+    uint8_t L = hsl_pixel[1];
+    uint8_t S = hsl_pixel[2];
+    res[0] = S * cos(H);
+    res[1] = S * sin(H);
+    res[2] = L;
+    return res;
+}
+
+double PBAS::hsLproduct(Vec3b p1, Vec3b p2) {
+    int dot1 = p1[0]*p2[0];
+    int dot2 = p1[1]*p2[1];
+    return max(0,dot1+dot2) + p1[2]*p2[2];
+}
+
+void PBAS::color_normalized_cross_correlation() {
+    int M = 7, N = 7; int MN = M*N;
+    int halfM = (M-1)/2; int halfN = (N-1)/2;
+    float cncc_threshold = 0.9;
+
+    shadow_cncc = Mat::zeros(h, w, CV_8UC1);
+
+    for(int x=halfM; x<this->h - halfM; ++x) {
+    for(int y=halfN; y<this->w - halfN; ++y) {
+        if(F.at<uint8_t>(x,y) != 0) {
+            // Vec3b *f = frame_hsl.ptr<Vec3b>(0);
+            // Vec3b *b = bg_hsl.ptr<Vec3b>(0);
+            double cncc = 0;
+            double L_avg_frame = 0; double L_avg_bg = 0;
+            double var_f = 0; double var_bg = 0;
+            for(int i=x-halfM; i<x+halfM; ++i) {
+            for(int j=y-halfN; j<y+halfN; ++j) {
+                Vec3d pixelF_ij = frame_hsl.at<Vec3d>(i,j);
+                Vec3d pixelB_ij = bg_hsl.at<Vec3d>(i,j);
+                cncc += hsLproduct(pixelF_ij, pixelB_ij);
+                L_avg_frame += pixelF_ij[2];
+                L_avg_bg += pixelB_ij[2];
+                var_f += hsLproduct(pixelF_ij, pixelF_ij);
+                var_bg += hsLproduct(pixelB_ij, pixelB_ij);
+            }
+            }
+            L_avg_frame /= MN;
+            L_avg_bg /= MN;
+            var_f -= MN * L_avg_frame * L_avg_frame;
+            var_bg -= MN * L_avg_bg * L_avg_bg;
+
+            cncc -= MN * L_avg_frame * L_avg_bg;
+            cncc /= sqrt(var_f * var_bg);
+
+            if(cncc < cncc_threshold) {
+                shadow_cncc.at<uint8_t>(x,y) = 255;
+            }
+        }
+    }
+    }
+    return;
 }

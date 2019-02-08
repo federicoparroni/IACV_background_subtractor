@@ -122,7 +122,7 @@ int main(int argc, char const *argv[]) {
     Mat frame;
     Mat* mask;
     Mat edges;
-    float fps = cap.get(CV_CAP_PROP_FPS);
+    float fps = cap.get(5);
     float act_seconds = 0.0, partial_seconds = -1 / fps;
     int count_time_slot = 0;
     string folder_base, act_subfolder_base;

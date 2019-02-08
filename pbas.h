@@ -43,7 +43,7 @@ class PBAS
 
         const uint8_t *i;
         const Vec3b *i_rgb;
-        const uint8_t *i_grad;
+        const double *i_grad;
         uint8_t *q;
         uint8_t *q_shadow_hsv;
         float *r;
@@ -53,7 +53,7 @@ class PBAS
         void init();
 
         float distance(uint8_t, uint8_t);
-        float distance(uint8_t p, uint8_t p_grad, uint8_t g, uint8_t g_grad);
+        double distance(uint8_t p, double p_grad, uint8_t g, double g_grad);
 
         void updateMedian(int col);
         void updateF(int x, int y, int i_ptr);
