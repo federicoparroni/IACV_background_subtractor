@@ -163,10 +163,6 @@ Mat PBAS::process(const Mat &frame) {
     //     return &F;
     // }
 
-    showCVMat(F[0], false, "f0");
-    showCVMat(F[1], false, "f1");
-    showCVMat(F[2], false, "f3");
-
     auto start = high_resolution_clock::now();
     for(int c=0; c < channels; c++) {
         for(int x=0; x < this->h; x++) {
@@ -246,7 +242,6 @@ void PBAS::init(int channels) {
         t.push_back(0);
         I_m.push_back(1);
     }
-    //this->frame_grad.resize(channels);
     assert(B.size() == channels);
     assert(B_grad.size() == channels);
     assert(D.size() == channels);
@@ -281,7 +276,8 @@ Mat PBAS::gradient_magnitude(const Mat &frame){
 }
 
 double PBAS::distance(double p, double p_grad, double g, double g_grad, int c) {
-    return (this->alpha/this->I_m[c]) * abs(p_grad - g_grad) + abs(p - g);
+    // TO-DO
+    // return (this->alpha/this->I_m[c]) * abs(p_grad - g_grad) + abs(p - g);
     //cout << abs(p - g) << endl;
     return abs(p - g);
 }
@@ -290,16 +286,15 @@ void PBAS::updateF(int x, int y, int c) {
     int k = 0;  // number of lower-than-R distances found so far
     int j = 0;
     while(j < N && k < K) {
+        // TO-DO
         if(distance(i[c][y], i_grad[c][y], B[c][j].at<uint8_t>(x,y), B_grad[c][j].at<float>(x,y), c) < r[c][y]) {
             k++;
         }
         j++;
     }
     // check if at least K distances are less than R(x,y) => background pixel
-    //cout << k << endl;
     if(k >= K) {
         q[c][y] = 0;
-        //this->F[c].at<uint8_t>(x,y)=0;
         // q_shadow_hsv[i_ptr]=0;
         updateB(x, y, c);
     } else {

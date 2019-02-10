@@ -42,7 +42,7 @@ int main(int argc, char const *argv[]) {
     PBAS *pbas1 = new PBAS(N, K, R_incdec, R_lower, R_scale, T_dec, T_inc, T_lower, T_upper, alpha);
     //PBAS *pbas2 = new PBAS(N, K, R_incdec, R_lower, R_scale, T_dec, T_inc, T_lower, T_upper, alpha);
     //PBAS *pbas3 = new PBAS(N, K, R_incdec, R_lower, R_scale, T_dec, T_inc, T_lower, T_upper, alpha);
-    //pbas1->verbose = false; pbas2->verbose = false; pbas3->verbose = false;
+    pbas1->verbose = false; // pbas2->verbose = false; pbas3->verbose = false;
     Mat frame1, frame2, frame3;
     Mat mask1, mask2, mask3;
     
@@ -62,11 +62,11 @@ int main(int argc, char const *argv[]) {
         //mask2 = pbas2->process(frame2);
         //mask3 = pbas3->process(frame3);
         
-/*         imshow("Jackson1", frame1);
-        if(current_frame == 0) moveWindow("Jackson1", 10,20);
+        imshow("Jackson1", frame1);
+        if(current_frame == 0) moveWindow("Jackson1", 0,20);
         imshow("Jackson1 mask", mask1);
-        if(current_frame == 0) moveWindow("Jackson1 mask", 410, 20);
-
+        if(current_frame == 0) moveWindow("Jackson1 mask", 420, 20);
+/*
         imshow("Jackson2", frame2);
         if(current_frame == 0) moveWindow("Jackson2", 10,300);
         imshow("Jackson2 mask", mask2);
@@ -76,8 +76,6 @@ int main(int argc, char const *argv[]) {
         if(current_frame == 0) moveWindow("Railway", 10,580);
         imshow("Railway mask", mask3);
         if(current_frame == 0) moveWindow("Railway mask", 410, 580); */
-
-        imshow("final mask", mask1);
 
         char c=(char)waitKey(25);
         if(c==27) break;
