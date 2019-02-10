@@ -27,7 +27,7 @@ class PBAS
         float T_inc;
         float T_lower;
         float T_upper;
-        int alpha;
+        float alpha;
         vector<float> I_m;
         
         // frame
@@ -163,6 +163,10 @@ Mat PBAS::process(const Mat &frame) {
     //     return &F;
     // }
 
+    showCVMat(F[0], false, "f0");
+    showCVMat(F[1], false, "f1");
+    showCVMat(F[2], false, "f3");
+
     auto start = high_resolution_clock::now();
     for(int c=0; c < channels; c++) {
         for(int x=0; x < this->h; x++) {
@@ -176,15 +180,18 @@ Mat PBAS::process(const Mat &frame) {
             this->I_m[c] = mean(this->frame_grad[c]).val[0];
 
             for (int y=0; y < this->w; y++) {
+                //cout << "x,y" << x << ";" << y << endl;
                 updateF(x, y, c);
-                // updateT(x, y, c);
+                updateT(x, y, c);
+                // q[y] = i[y][0];
             }
+            
         }
         // showCVMat(frame_grad[c], false, format("framegrad%d",c));
         // showCVMat(R[c], false, format("R%d",c));
         // showCVMat(F[c], false, format("F%d",c));
         // showCVMat(T[c], false, format("T%d",c));
-        medianBlur(F[c],F[c],3);
+        //medianBlur(F[c],F[c],3);
     }
     //showCVMat(B[0][0], false, format("B%d",0));
 
@@ -210,7 +217,7 @@ void PBAS::init(int channels) {
             Mat b_elem(h, w, CV_8UC1);
             randu(b_elem, 0, 255);
             b.push_back(b_elem);
-            //b.push_back(this->frame.clone());
+            //b.push_back(this->frame[c].clone());
 
             Mat b_grad_elem(h, w, CV_32FC1);
             randu(b_grad_elem, 0, 255);
@@ -276,24 +283,23 @@ Mat PBAS::gradient_magnitude(const Mat &frame){
 double PBAS::distance(double p, double p_grad, double g, double g_grad, int c) {
     return (this->alpha/this->I_m[c]) * abs(p_grad - g_grad) + abs(p - g);
     //cout << abs(p - g) << endl;
-    // return abs(p - g);
+    return abs(p - g);
 }
 
 void PBAS::updateF(int x, int y, int c) {
     int k = 0;  // number of lower-than-R distances found so far
     int j = 0;
-    // showCVMat(R[c], false, format("R%d",c));
     while(j < N && k < K) {
-        //showCVMat(B_grad[c][j], false, format("B_grad %d,%d",c,j));
-        //if(distance(i[c][y][c], i_grad[c][y], B[c][j].at<uint8_t>(x,y), B_grad[c][j].at<float>(x,y), c) < r[c][y]) {
         if(distance(i[c][y], i_grad[c][y], B[c][j].at<uint8_t>(x,y), B_grad[c][j].at<float>(x,y), c) < r[c][y]) {
             k++;
         }
         j++;
     }
     // check if at least K distances are less than R(x,y) => background pixel
+    //cout << k << endl;
     if(k >= K) {
         q[c][y] = 0;
+        //this->F[c].at<uint8_t>(x,y)=0;
         // q_shadow_hsv[i_ptr]=0;
         updateB(x, y, c);
     } else {
@@ -344,7 +350,7 @@ void PBAS::updateR(int x, int y, int c, int n) {
     // find dmin
     float d_min = 255;
     float d_act = 0;
-    for (int j=0; j<N; j++){
+    for (int j=0; j<N; j++) {
         d_act = distance(i[c][y], i_grad[c][y], B[c][j].at<uint8_t>(x, y), B_grad[c][j].at<float>(x, y), c);
         if (d_act < d_min)
             d_min = d_act;
@@ -374,7 +380,7 @@ void PBAS::updateR_notoptimized(int x, int y, int c, int n) {
     float I_grad = frame_grad[c].at<float>(x,y);
     float d_min = 255;
     float d_act = 0;
-    for (int i=0; i<N; i++){
+    for (int i=0; i<N; i++) {
         d_act = distance(I, I_grad, B[c][i].at<uint8_t>(x, y), B_grad[c][i].at<float>(x, y), c);
         if (d_act < d_min)
             d_min = d_act;
