@@ -28,23 +28,23 @@ class PBAS
         float T_lower;
         float T_upper;
         int alpha;
-        float I_m;
+        vector<float> I_m;
         
         // frame
-        Mat frame;
+        vector<Mat> frame;
         vector<Mat> frame_grad;
         int w;
         int h;
 
         // model support matrices and pointers
-        const Vec3b *i;
-        const float *i_grad;
+        vector<uint8_t*> i;
+        vector<float*> i_grad;
 
         vector<vector<Mat>> B;
         vector<vector<Mat>> B_grad;
 
-        vector<Mat> R; float *r;
-        vector<Mat> T; float *t;
+        vector<Mat> R; vector<float*> r;
+        vector<Mat> T; vector<float*> t;
     
         vector<vector<Mat>> D;
         vector<Mat> d_minavg;
@@ -54,12 +54,12 @@ class PBAS
         //Vec3b *med;
 
         // output
-        vector<Mat> F; uint8_t *q;
+        vector<Mat> F; vector<uint8_t*> q;
         //Mat final_mask;
 
         // methods
         void init(int channels);
-        double distance(uint8_t p, double p_grad, uint8_t g, double g_grad);
+        double distance(double p, double p_grad, double g, double g_grad, int c);
         //void updateMedian(int col);
 
         void updateF(int x, int y, int c);
@@ -100,7 +100,7 @@ PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, f
     this->T_lower = T_lower;
     this->T_upper = T_upper;
     this->alpha = alpha;
-    this->I_m = 1.0;
+    //this->I_m = 1.0;
     
     //initialize random seed
     //srand (time(NULL));
@@ -117,7 +117,7 @@ PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, f
 }
 
 PBAS::~PBAS() {
-    frame.release();
+    frame.clear();
     frame_grad.clear();
     //median.release();
     B.clear();
@@ -139,7 +139,8 @@ void PBAS::init_Mat(Mat &matrix, float initial_value){
 }
 
 Mat PBAS::process(const Mat &frame) {
-    this->frame = frame;
+    split(frame, this->frame);
+    //this->frame = frame;
     this->w = frame.cols;
     this->h = frame.rows;
     int channels = frame.channels();
@@ -165,27 +166,27 @@ Mat PBAS::process(const Mat &frame) {
     auto start = high_resolution_clock::now();
     for(int c=0; c < channels; c++) {
         for(int x=0; x < this->h; x++) {
-            this->i = this->frame.ptr<Vec3b>(x);
-            this->i_grad = frame_grad[c].ptr<float>(x);
-            this->q = F[c].ptr<uint8_t>(x);
-            this->r = R[c].ptr<float>(x);
-            this->t = T[c].ptr<float>(x);
+            this->i[c] = this->frame[c].ptr<uint8_t>(x);
+            this->i_grad[c] = frame_grad[c].ptr<float>(x);
+            this->q[c] = F[c].ptr<uint8_t>(x);
+            this->r[c] = R[c].ptr<float>(x);
+            this->t[c] = T[c].ptr<float>(x);
             //this->med = median.ptr<Vec3b>(x);
 
-            this->I_m = mean(this->frame_grad[c]).val[0];
+            this->I_m[c] = mean(this->frame_grad[c]).val[0];
 
             for (int y=0; y < this->w; y++) {
                 updateF(x, y, c);
                 // updateT(x, y, c);
-                // q[y] = i[y][0];
             }
         }
         // showCVMat(frame_grad[c], false, format("framegrad%d",c));
         // showCVMat(R[c], false, format("R%d",c));
-        showCVMat(F[c], false, format("F%d",c));
+        // showCVMat(F[c], false, format("F%d",c));
         // showCVMat(T[c], false, format("T%d",c));
         medianBlur(F[c],F[c],3);
     }
+    //showCVMat(B[0][0], false, format("B%d",0));
 
     if(verbose) {
         auto stop = high_resolution_clock::now();
@@ -230,6 +231,13 @@ void PBAS::init(int channels) {
 
         init_Mat(T[c], T_lower);
         init_Mat(R[c], 128);
+
+        i.push_back(0);
+        i_grad.push_back(0);
+        q.push_back(0);
+        r.push_back(0);
+        t.push_back(0);
+        I_m.push_back(1);
     }
     //this->frame_grad.resize(channels);
     assert(B.size() == channels);
@@ -265,28 +273,33 @@ Mat PBAS::gradient_magnitude(const Mat &frame){
     return grad;
 }
 
-double PBAS::distance(uint8_t p, double p_grad, uint8_t g, double g_grad) {
-    return (this->alpha/this->I_m) * abs(p_grad - g_grad) + abs(p - g); 
+double PBAS::distance(double p, double p_grad, double g, double g_grad, int c) {
+    return (this->alpha/this->I_m[c]) * abs(p_grad - g_grad) + abs(p - g);
+    //cout << abs(p - g) << endl;
+    // return abs(p - g);
 }
 
 void PBAS::updateF(int x, int y, int c) {
     int k = 0;  // number of lower-than-R distances found so far
     int j = 0;
+    // showCVMat(R[c], false, format("R%d",c));
     while(j < N && k < K) {
-        if(distance(i[y][c], i_grad[y], B[c][j].at<uint8_t>(x,y), B_grad[c][j].at<float>(x,y)) < r[y]) {
+        //showCVMat(B_grad[c][j], false, format("B_grad %d,%d",c,j));
+        //if(distance(i[c][y][c], i_grad[c][y], B[c][j].at<uint8_t>(x,y), B_grad[c][j].at<float>(x,y), c) < r[c][y]) {
+        if(distance(i[c][y], i_grad[c][y], B[c][j].at<uint8_t>(x,y), B_grad[c][j].at<float>(x,y), c) < r[c][y]) {
             k++;
         }
         j++;
     }
     // check if at least K distances are less than R(x,y) => background pixel
     if(k >= K) {
-        q[y] = 0;
+        q[c][y] = 0;
         // q_shadow_hsv[i_ptr]=0;
-        //updateB(x, y, c);
+        updateB(x, y, c);
     } else {
         // if(!is_shadow(i_ptr)) q_shadow_hsv[i_ptr] = 255;
         // else q_shadow_hsv[i_ptr] = 0;
-        q[y] = 255;
+        q[c][y] = 255;
     }
 }
 
@@ -295,7 +308,7 @@ void PBAS::updateB(int x, int y, int c) {
     pair<int, int> disp;
 
     // get the T[x,y]
-    float update_p = 100 / t[y];
+    float update_p = 100 / t[c][y];
     
     // generate a number between 0 and 99
     int rand_numb = rand() %100;
@@ -304,8 +317,8 @@ void PBAS::updateB(int x, int y, int c) {
     int n = rand() % N;
     if(rand_numb < update_p) {
         updateR(x, y, c, n);
-        B[c][n].at<uint8_t>(x, y) = i[y][c];
-        B_grad[c][n].at<float>(x, y) = i_grad[y];
+        B[c][n].at<uint8_t>(x, y) = i[c][y];
+        B_grad[c][n].at<float>(x, y) = i_grad[c][y];
     }
     
     return;
@@ -322,7 +335,7 @@ void PBAS::updateB(int x, int y, int c) {
             y_disp = disp.second;
         }
         updateR_notoptimized(x+x_disp, y+y_disp, c, n);
-        B[c][n].at<uint8_t>(x+x_disp, y+y_disp) = frame.at<Vec3b>(x+x_disp, y+y_disp)[c];
+        B[c][n].at<uint8_t>(x+x_disp, y+y_disp) = frame[c].at<uint8_t>(x+x_disp, y+y_disp);
         B_grad[c][n].at<float>(x+x_disp, y+y_disp) = frame_grad[c].at<float>(x+x_disp, y+y_disp);
     }
 }
@@ -332,7 +345,7 @@ void PBAS::updateR(int x, int y, int c, int n) {
     float d_min = 255;
     float d_act = 0;
     for (int j=0; j<N; j++){
-        d_act = distance(i[y][c], i_grad[y], B[c][j].at<uint8_t>(x, y), B_grad[c][j].at<float>(x, y));
+        d_act = distance(i[c][y], i_grad[c][y], B[c][j].at<uint8_t>(x, y), B_grad[c][j].at<float>(x, y), c);
         if (d_act < d_min)
             d_min = d_act;
     }
@@ -347,22 +360,22 @@ void PBAS::updateR(int x, int y, int c, int n) {
     d_minavg[c].at<float>(x,y) = d_cum/N;
 
     // update R
-    if (r[y] > d_minavg[c].at<float>(x,y) * R_scale){
-        r[y] = r[y] * (1 - R_incdec);
+    if (r[c][y] > d_minavg[c].at<float>(x,y) * R_scale){
+        r[c][y] = r[c][y] * (1 - R_incdec);
     } else {
-        r[y] = r[y] * (1 + R_incdec);
+        r[c][y] = r[c][y] * (1 + R_incdec);
     }
-    r[y] = max(R_lower, r[y]);
+    r[c][y] = max(R_lower, r[c][y]);
 }
 
 void PBAS::updateR_notoptimized(int x, int y, int c, int n) {
     // find dmin
-    uint8_t I = frame.at<Vec3b>(x, y)[c];
+    uint8_t I = frame[c].at<uint8_t>(x, y);
     float I_grad = frame_grad[c].at<float>(x,y);
     float d_min = 255;
     float d_act = 0;
     for (int i=0; i<N; i++){
-        d_act = distance(I, I_grad, B[c][i].at<uint8_t>(x, y), B_grad[c][i].at<float>(x, y));
+        d_act = distance(I, I_grad, B[c][i].at<uint8_t>(x, y), B_grad[c][i].at<float>(x, y), c);
         if (d_act < d_min)
             d_min = d_act;
     }
@@ -387,14 +400,14 @@ void PBAS::updateR_notoptimized(int x, int y, int c, int n) {
 }
 
 void PBAS::updateT(int x, int y, int c) {
-    float oldT = t[y];
-    if(q[y] == 255)
-        t[y] += T_inc / (d_minavg[c].at<float>(x,y) + 0.1);
+    float oldT = t[c][y];
+    if(q[c][y] == 255)
+        t[c][y] += T_inc / (d_minavg[c].at<float>(x,y) + 0.1);
     else
-        t[y] -= T_dec / (d_minavg[c].at<float>(x,y) + 0.1);
+        t[c][y] -= T_dec / (d_minavg[c].at<float>(x,y) + 0.1);
 
-    t[y] = max(T_lower, t[y]);
-    t[y] = min(T_upper, t[y]);
+    t[c][y] = max(T_lower, t[c][y]);
+    t[c][y] = min(T_upper, t[c][y]);
 }
 
 // void PBAS::updateMedian(int col){
