@@ -168,7 +168,7 @@ Mat* PBAS::process(const Mat* frame) {
             B_grad.push_back(b_grad_elem);
             //B_grad.push_back(frame_grad.clone());
 
-            Mat d_elem = Mat::zeros(h, w, CV_8UC1);
+            Mat d_elem = Mat::zeros(h, w, CV_32FC1);
             D.push_back(d_elem);
         }
         F = Mat::zeros(h, w, CV_8UC1);
@@ -370,17 +370,17 @@ void PBAS::updateB(int x, int y, int i_ptr) {
 void PBAS::updateR(int x, int y, int n, int i_ptr) {
     // find dmin
     uint8_t I = i[i_ptr];
-    uint8_t I_grad = i_grad[i_ptr];
-    int d_min = 255;
-    int d_act = 0;
+    float I_grad = i_grad[i_ptr];
+    float d_min = 255;
+    float d_act = 0;
     for (int i=0; i<N; i++){
-        d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<uint8_t>(x, y));
+        d_act = distance(I, I_grad, B[i].at<uint8_t>(x, y), B_grad[i].at<float>(x, y));
         if (d_act < d_min)
             d_min = d_act;
     }
 
     // update Dk
-    D[n].at<uint8_t>(x, y) = d_min;
+    D[n].at<float>(x, y) = d_min;
 
     // find davg
     float d_cum = 0;
