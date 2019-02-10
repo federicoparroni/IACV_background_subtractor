@@ -27,7 +27,7 @@ class PBAS
         float T_inc;
         float T_lower;
         float T_upper;
-        int alpha;
+        float alpha;
         float I_m;
         
         // frame
@@ -61,6 +61,7 @@ class PBAS
         void init(int channels);
         double distance(uint8_t p, double p_grad, uint8_t g, double g_grad);
         //void updateMedian(int col);
+        float distance_abs(uint8_t a, uint8_t b);
 
         void updateF(int x, int y, int c);
         void updateB(int x, int y, int c);
@@ -162,6 +163,10 @@ Mat PBAS::process(const Mat &frame) {
     //     return &F;
     // }
 
+    showCVMat(F[0], false, "f0");
+    showCVMat(F[1], false, "f1");
+    showCVMat(F[2], false, "f3");
+
     auto start = high_resolution_clock::now();
     for(int c=0; c < channels; c++) {
         for(int x=0; x < this->h; x++) {
@@ -175,16 +180,18 @@ Mat PBAS::process(const Mat &frame) {
             this->I_m = mean(this->frame_grad[c]).val[0];
 
             for (int y=0; y < this->w; y++) {
+                //cout << "x,y" << x << ";" << y << endl;
                 updateF(x, y, c);
-                // updateT(x, y, c);
+                updateT(x, y, c);
                 // q[y] = i[y][0];
             }
+            
         }
         // showCVMat(frame_grad[c], false, format("framegrad%d",c));
         // showCVMat(R[c], false, format("R%d",c));
-        showCVMat(F[c], false, format("F%d",c));
+        //showCVMat(F[c], false, format("F%d",c));
         // showCVMat(T[c], false, format("T%d",c));
-        medianBlur(F[c],F[c],3);
+        //medianBlur(F[c],F[c],3);
     }
 
     if(verbose) {
@@ -209,7 +216,7 @@ void PBAS::init(int channels) {
             Mat b_elem(h, w, CV_8UC1);
             randu(b_elem, 0, 255);
             b.push_back(b_elem);
-            //b.push_back(this->frame.clone());
+            //b.push_back(this->frame[c].clone());
 
             Mat b_grad_elem(h, w, CV_32FC1);
             randu(b_grad_elem, 0, 255);
@@ -269,24 +276,36 @@ double PBAS::distance(uint8_t p, double p_grad, uint8_t g, double g_grad) {
     return (this->alpha/this->I_m) * abs(p_grad - g_grad) + abs(p - g); 
 }
 
+float PBAS::distance_abs(uint8_t a, uint8_t b) {
+    return abs(a-b);
+}
+
 void PBAS::updateF(int x, int y, int c) {
+    //cout << "x,y " << x << ";" << y << " c " << c <<endl;
     int k = 0;  // number of lower-than-R distances found so far
     int j = 0;
     while(j < N && k < K) {
-        if(distance(i[y][c], i_grad[y], B[c][j].at<uint8_t>(x,y), B_grad[c][j].at<float>(x,y)) < r[y]) {
+        //cout << "r[y] "<< r[y] << "distance "<< distance(i[y][c], i_grad[y], B[c][j].at<uint8_t>(x,y), B_grad[c][j].at<float>(x,y)) << endl;
+        //if(distance(i[y][c], i_grad[y], B[c][j].at<uint8_t>(x,y), B_grad[c][j].at<float>(x,y)) < r[y]) {
+        
+        //cout << distance_abs(i[y][c], B[c][j].at<uint8_t>(x,y)) << endl;
+        if(distance_abs(i[y][c], B[c][j].at<uint8_t>(x,y)) < r[y]) {
             k++;
         }
         j++;
     }
     // check if at least K distances are less than R(x,y) => background pixel
+    //cout << k << endl;
     if(k >= K) {
         q[y] = 0;
+        //this->F[c].at<uint8_t>(x,y)=0;
         // q_shadow_hsv[i_ptr]=0;
-        //updateB(x, y, c);
+        updateB(x, y, c);
     } else {
         // if(!is_shadow(i_ptr)) q_shadow_hsv[i_ptr] = 255;
         // else q_shadow_hsv[i_ptr] = 0;
         q[y] = 255;
+        //this->F[c].at<uint8_t>(x,y)=255;
     }
 }
 
@@ -332,7 +351,8 @@ void PBAS::updateR(int x, int y, int c, int n) {
     float d_min = 255;
     float d_act = 0;
     for (int j=0; j<N; j++){
-        d_act = distance(i[y][c], i_grad[y], B[c][j].at<uint8_t>(x, y), B_grad[c][j].at<float>(x, y));
+        //d_act = distance(i[y][c], i_grad[y], B[c][j].at<uint8_t>(x, y), B_grad[c][j].at<float>(x, y));
+        d_act = distance_abs(i[y][c], B[c][j].at<uint8_t>(x, y));
         if (d_act < d_min)
             d_min = d_act;
     }
@@ -362,7 +382,8 @@ void PBAS::updateR_notoptimized(int x, int y, int c, int n) {
     float d_min = 255;
     float d_act = 0;
     for (int i=0; i<N; i++){
-        d_act = distance(I, I_grad, B[c][i].at<uint8_t>(x, y), B_grad[c][i].at<float>(x, y));
+        //d_act = distance(I, I_grad, B[c][i].at<uint8_t>(x, y), B_grad[c][i].at<float>(x, y));
+        d_act = distance_abs(I,B[c][i].at<uint8_t>(x, y));
         if (d_act < d_min)
             d_min = d_act;
     }
