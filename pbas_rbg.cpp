@@ -38,7 +38,7 @@ class PBAS
 
         // model support matrices and pointers
         vector<uint8_t*> i;
-        vector<float*> i_grad;
+        vector<uint8_t*> i_grad;
 
         vector<vector<Mat>> B;
         vector<vector<Mat>> B_grad;
@@ -167,7 +167,7 @@ Mat PBAS::process(const Mat &frame) {
     for(int c=0; c < channels; c++) {
         for(int x=0; x < this->h; x++) {
             this->i[c] = this->frame[c].ptr<uint8_t>(x);
-            this->i_grad[c] = frame_grad[c].ptr<float>(x);
+            this->i_grad[c] = frame_grad[c].ptr<uint8_t>(x);
             this->q[c] = F[c].ptr<uint8_t>(x);
             this->r[c] = R[c].ptr<float>(x);
             this->t[c] = T[c].ptr<float>(x);
@@ -276,10 +276,8 @@ Mat PBAS::gradient_magnitude(const Mat &frame){
 }
 
 double PBAS::distance(double p, double p_grad, double g, double g_grad, int c) {
-    // TO-DO
-    // return (this->alpha/this->I_m[c]) * abs(p_grad - g_grad) + abs(p - g);
-    //cout << abs(p - g) << endl;
-    return abs(p - g);
+    return (this->alpha/this->I_m[c]) * abs(p_grad - g_grad) + abs(p - g);
+    // return abs(p - g);
 }
 
 void PBAS::updateF(int x, int y, int c) {
@@ -287,7 +285,7 @@ void PBAS::updateF(int x, int y, int c) {
     int j = 0;
     while(j < N && k < K) {
         // TO-DO
-        if(distance(i[c][y], i_grad[c][y], B[c][j].at<uint8_t>(x,y), B_grad[c][j].at<float>(x,y), c) < r[c][y]) {
+        if(distance(i[c][y], i_grad[c][y], B[c][j].at<uint8_t>(x,y), B_grad[c][j].at<uint8_t>(x,y), c) < r[c][y]) {
             k++;
         }
         j++;
@@ -322,7 +320,6 @@ void PBAS::updateB(int x, int y, int c) {
         B_grad[c][n].at<float>(x, y) = i_grad[c][y];
     }
     
-    return;
     //generate a random number between 0 and 99
     rand_numb = rand() %100;
     if(rand_numb < update_p) {
