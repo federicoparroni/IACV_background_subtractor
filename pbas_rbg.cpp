@@ -5,6 +5,7 @@
 #include <utility>      
 #include <algorithm>
 #include <opencv2/opencv.hpp>
+#include <thread>
 
 #include <chrono>
 using namespace std::chrono;
@@ -16,6 +17,8 @@ class PBAS
 {
     private:
         int frame_count = 0;
+
+        vector<thread> threads;
 
         // model params
         int N;
@@ -62,6 +65,8 @@ class PBAS
         double distance(double p, double p_grad, double g, double g_grad, int c);
         //void updateMedian(int col);
 
+
+        void process_channel(int c);
         void updateF(int x, int y, int c);
         void updateB(int x, int y, int c);
         void updateR(int x, int y, int c, int n);
@@ -127,6 +132,9 @@ PBAS::~PBAS() {
     F.clear();
     d_minavg.clear();
     displacement_vec.clear();
+    
+    for(thread &t : threads) t.join();
+    threads.clear();
 }
 
 
@@ -164,31 +172,12 @@ Mat PBAS::process(const Mat &frame) {
     // }
 
     auto start = high_resolution_clock::now();
+    threads.clear();
     for(int c=0; c < channels; c++) {
-        for(int x=0; x < this->h; x++) {
-            this->i[c] = this->frame[c].ptr<uint8_t>(x);
-            this->i_grad[c] = frame_grad[c].ptr<float>(x);
-            this->q[c] = F[c].ptr<uint8_t>(x);
-            this->r[c] = R[c].ptr<float>(x);
-            this->t[c] = T[c].ptr<float>(x);
-            //this->med = median.ptr<Vec3b>(x);
-
-            this->I_m[c] = mean(this->frame_grad[c]).val[0];
-
-            for (int y=0; y < this->w; y++) {
-                //cout << "x,y" << x << ";" << y << endl;
-                updateF(x, y, c);
-                updateT(x, y, c);
-                // q[y] = i[y][0];
-            }
-            
-        }
-        // showCVMat(frame_grad[c], false, format("framegrad%d",c));
-        // showCVMat(R[c], false, format("R%d",c));
-        // showCVMat(F[c], false, format("F%d",c));
-        // showCVMat(T[c], false, format("T%d",c));
-        //medianBlur(F[c],F[c],3);
+        threads.push_back(thread(&PBAS::process_channel, this, c));
     }
+    // wait all threads
+    for(thread &t : threads) t.join();
     //showCVMat(B[0][0], false, format("B%d",0));
 
     if(verbose) {
@@ -201,8 +190,32 @@ Mat PBAS::process(const Mat &frame) {
     for(int c = 0; c < channels; c++) {
         bitwise_or(res, F[c], res);
     }
+    // medianBlur(res,res,3);
     
     return res;
+}
+
+void PBAS::process_channel(int c) {
+    for(int x=0; x < this->h; x++) {
+        this->i[c] = this->frame[c].ptr<uint8_t>(x);
+        this->i_grad[c] = frame_grad[c].ptr<float>(x);
+        this->q[c] = F[c].ptr<uint8_t>(x);
+        this->r[c] = R[c].ptr<float>(x);
+        this->t[c] = T[c].ptr<float>(x);
+        //this->med = median.ptr<Vec3b>(x);
+
+        this->I_m[c] = mean(this->frame_grad[c]).val[0];
+
+        for (int y=0; y < this->w; y++) {
+            updateF(x, y, c);
+            updateT(x, y, c);
+        }
+    }
+    // showCVMat(frame_grad[c], false, format("framegrad%d",c));
+    // showCVMat(R[c], false, format("R%d",c));
+    // showCVMat(F[c], false, format("F%d",c));
+    // showCVMat(T[c], false, format("T%d",c));
+    //medianBlur(F[c],F[c],3);
 }
 
 // initialize all support matrices
