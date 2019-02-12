@@ -41,8 +41,7 @@ aimed task.
 Background subtraction and foreground detection are the basic tasks of many real application systems,
 for example, surveillance systems, autonomous vehicles, semantic image analysis. Background subtraction
 consists in finding a category for every pixel in a single or (like in this case) in a frames sequence
-of a video and saying if that pixels are part of background or foreground. At the end, the algorithm take as
-as input a video and output a binary mask, where 1s are foreground pixels and 0 background pixels.
+of a video and saying if that pixels are part of background or foreground. At the end, the algorithm take as input a video and output a binary mask, where 1s are foreground pixels and 0 background pixels.
 We restricted our domain to traffic monitoring, in particular this work should put the basis for an automated
 tool to identify cars and detect anomalies in highways and roads 24/24h (e.g. car accidents,
 traffic jam, wrong-direction driving) using a standard RGB stationary camera.
@@ -75,7 +74,7 @@ a history of the N most recent image values at each pixel and uses a random sche
 More over, updated pixels can ”diffuse” their current pixel value into neighboring pixel using another
 random selection method. The preceding scheme is very similar to the approach followed by the PBAS algorithm.
 It can be categorized as a non-parametric method, since it uses a history of N image values as the background
-model, and uses a random update rule similar to the one used by the ViBe algorithm. However, in Vibe, the
+model, and uses a random update rule similar to the one used by the ViBe algorithm. However, in ViBe, the
 randomness parameters as well as the decision threshold are fixed for all pixels. In contrast, in the PBAS
 algorithm these values are not treated as parameters, but instead as adaptive state variables, which can
 dynamically change over time for each pixel separately.
@@ -91,7 +90,7 @@ To solve the presented problem we have studied deeply the PBAS algorithm, how it
 \end{figure*}
 
 This section describes the Pixel-Based Adaptive Segmenter, which follows a non-parametric paradigm. Thus,
-every pixel x i is modeled by an array of recently observed background values. The method consists of several components which are depicted as a state machine in Figure 1. As a central component, the decision block decides for or against foreground
+every pixel $x_i$ is modeled by an array of recently observed background values. The method consists of several components which are depicted as a state machine in Figure 1. As a central component, the decision block decides for or against foreground
 based on the current image and a background model $B(x_i)$. This decision is based on the per-pixel threshold $R(x_i)$. Moreover, the background model has to be updated over time in order to allow for gradual background changes. In the model, this update depends on a per-pixel learning parameter $T(x_i)$. \newline The background model $B(x_i)$ is defined by an array of N recently observed pixel values:
 \begin{equation}
 \mathbf{B}(x_i) = \{B_1(x_i),...,B_k(x_i),...,B_N(x_i)\}
