@@ -188,9 +188,16 @@ classified as background.
 \caption{Setting $K$ too high brings to classify many pixels as foreground, with the risk of false positives.}
 \end{figure}
 
-\subsection*{T max}
-$T_{max}$ controls the lowest probability of updating a pixel and putting it the
-background model $B$.
+\subsection*{T}
+The controller $T(x_i)$ associated to each pixel, is introduced with the idea to change dinamically the learning rate associated to each pixel based on its classification. It is slowly increased when the pixel is classified as background and slowly decreased when the pixel is classified as foreground. That leads to have a better foreground detection for multiple reasons. \newline
+In case of highly dynamic background (i.e. big $\overline{d}_{min}(x_i)$), the learning parameter $T(x_i)$ stays constant or only slightly changes. In this case of highly dynamic background, erroneously detected foreground will not remain for long, be-
+cause the probability to update $p = 1/T(x_i)$ does not reach
+zero too fast. \newline
+In the other ideal case of a fully static background, a classification as foreground is quite solid. \newline
+$T_{upper}, T_{lower}:$ control respectively the lowest and the highest probability of updating a pixel and putting it in the
+background model $B$. \newline
+$T_{inc}, T_{dec}:$ are fixed parameters and control the update of the controller T of each pixel, has been chosen to differentiate the two quantity since the pixels that are background are usually the largest part so choosing different parameters can lead to a better perfomance.\newline
+Since one of the objective of the work is to have a robust classification of the foreground objects, we want to find the best values for the T parameters such that an object if classified as foreground stay as it for the longest period of time. INSERIRE IMMAGINI
 
 
 \subsection*{R}
