@@ -56,15 +56,13 @@ class PBAS
         
         //Vec3b *med;
 
-        // output
+        // mask
         vector<Mat> F; vector<uint8_t*> q;
-        //Mat final_mask;
 
         // methods
-        void init(int channels);
+        void init(const Mat &frame);
         double distance(double p, double p_grad, double g, double g_grad, int c);
         //void updateMedian(int col);
-
 
         void process_channel(int c);
         void updateF(int x, int y, int c);
@@ -90,6 +88,7 @@ class PBAS
         void showCVMat(Mat matrix, bool normalize, string window_name);
 
         //Mat median;
+        Mat estimatedBg;
 };
 
 
@@ -125,6 +124,7 @@ PBAS::~PBAS() {
     frame.clear();
     frame_grad.clear();
     //median.release();
+    estimatedBg.release();
     B.clear();
     R.clear();
     D.clear();
@@ -148,14 +148,13 @@ void PBAS::init_Mat(Mat &matrix, float initial_value){
 
 Mat PBAS::process(const Mat &frame) {
     split(frame, this->frame);
-    //this->frame = frame;
     this->w = frame.cols;
     this->h = frame.rows;
     int channels = frame.channels();
 
     // B, D, d_minavg initialization
     if (B.size() == 0) {
-        init(channels);
+        init(frame);
     }
     
     // gradients computation
@@ -178,7 +177,6 @@ Mat PBAS::process(const Mat &frame) {
     }
     // wait all threads
     for(thread &t : threads) t.join();
-    //showCVMat(B[0][0], false, format("B%d",0));
 
     if(verbose) {
         auto stop = high_resolution_clock::now();
@@ -186,13 +184,14 @@ Mat PBAS::process(const Mat &frame) {
         cout << duration.count() << "ms" << endl;
     }
 
-    Mat res = Mat::zeros(h, w, CV_8UC1);
+    Mat final_mask = Mat::zeros(h, w, CV_8UC1);
     for(int c = 0; c < channels; c++) {
-        bitwise_or(res, F[c], res);
+        bitwise_or(final_mask, F[c], final_mask);
     }
+    frame.copyTo(estimatedBg, 255-final_mask);
     // medianBlur(res,res,3);
     
-    return res;
+    return final_mask;
 }
 
 void PBAS::process_channel(int c) {
@@ -220,8 +219,8 @@ void PBAS::process_channel(int c) {
 }
 
 // initialize all support matrices
-void PBAS::init(int channels) {
-    for(int c=0; c<channels; c++) {
+void PBAS::init(const Mat &frame) {
+    for(int c=0; c<frame.channels(); c++) {
         vector<Mat> b, b_grad, d;
         for(int n=0; n<N; n++) {
             Mat b_elem(h, w, CV_8UC1);
@@ -256,13 +255,7 @@ void PBAS::init(int channels) {
         t.push_back(0);
         I_m.push_back(1);
     }
-    assert(B.size() == channels);
-    assert(B_grad.size() == channels);
-    assert(D.size() == channels);
-    assert(d_minavg.size() == channels);
-    assert(F.size() == channels);
-    assert(R.size() == channels);
-    assert(T.size() == channels);
+    estimatedBg = Mat::ones(frame.rows, frame.cols, frame.type());
 }
 
 Mat PBAS::gradient_magnitude(const Mat &frame){
