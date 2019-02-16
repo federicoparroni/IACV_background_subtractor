@@ -55,6 +55,7 @@ class PBAS
 
         // flow
         //Mat flow_active;
+        vector<uint8_t*> fw;
         vector<Mat> flow_active_history;
     
         vector<vector<Mat>> D;
@@ -203,8 +204,12 @@ Mat PBAS::process(const Mat &frame) {
     for(int c = 0; c < channels; c++) {
         bitwise_or(final_mask, F[c], final_mask);
     }
+    medianBlur(final_mask,final_mask,3);
+
     frame.copyTo(estimatedBg, 255-final_mask);
-    // medianBlur(res,res,3);
+
+    Mat toshow; T[0].convertTo(toshow, CV_8UC1);
+    imshow("T", toshow); moveWindow("T", 0, 550);
 
     return final_mask;
 }
@@ -217,8 +222,8 @@ void PBAS::process_channel(int c) {
         this->r[c] = R[c].ptr<float>(x);
         this->t[c] = T[c].ptr<float>(x);
         //this->med = median.ptr<Vec3b>(x);
-
         this->I_m[c] = mean(this->frame_grad[c]).val[0];
+        this->fw[c] = flow_active.ptr<uint8_t>(x);
 
         for (int y=0; y < this->w; y++) {
             updateF(x, y, c);
@@ -226,11 +231,6 @@ void PBAS::process_channel(int c) {
         }
         
     }
-    // showCVMat(frame_grad[c], false, format("framegrad%d",c));
-    // showCVMat(R[c], false, format("R%d",c));
-    // showCVMat(F[c], false, format("F%d",c));
-    // showCVMat(T[c], false, format("T%d",c));
-    //medianBlur(F[c],F[c],3);
 }
 
 // initialize all support matrices
@@ -269,6 +269,7 @@ void PBAS::init(int channels, int frametype) {
         r.push_back(0);
         t.push_back(0);
         I_m.push_back(1);
+        fw.push_back(0);
     }
     estimatedBg = Mat::ones(h, w, frametype);
 
@@ -428,6 +429,12 @@ void PBAS::updateT(int x, int y, int c) {
     else
         t[c][y] -= T_dec / (d_minavg[c].at<float>(x,y) + 0.1);
 
+    if(use_optical_flow) {
+        if(fw[c][y] == 0) t[c][y] -= 10;
+    }
+    
+    //if(fw[c][y] == 255) t[c][y] -= T_dec / (d_minavg[c].at<float>(x,y) + 0.1);
+
     t[c][y] = max(T_lower, t[c][y]);
     t[c][y] = min(T_upper, t[c][y]);
 }
@@ -458,17 +465,15 @@ void PBAS::analyzeOpticalFlow(const Mat &frame) {
     active_flow.convertTo(active_flow, CV_8UC1);
     flow_active_history.push_back(active_flow);
     
-    // update history and active flow
+    // update history and active flow pixels
     if(flow_active_history.size() >= consecutive_flow_activation) {
         flow_active_history.erase(flow_active_history.begin());
 
+        // combine in AND all history flows
         Mat total_hot(h, w, CV_8UC1, Scalar(255));
-        for(Mat m : flow_active_history) {
-            // imshow("m", m);
-            // waitKey(-1);
-            bitwise_and(total_hot, m, total_hot);
-        }
+        for(Mat m : flow_active_history) bitwise_and(total_hot, m, total_hot);
         
+        // then OR to add the new active flow pixels
         bitwise_or(flow_active, total_hot, flow_active);
     }
     previous_frame = current_frame;
