@@ -35,14 +35,14 @@ int main(int argc, char const *argv[]) {
         T_upper = stoi(argv[9]);
         alpha = stoi(argv[10]);
     }
-    VideoCapture cap1("videos/railway_s.mp4");
-    //VideoCapture cap2("videos/nighttraffic.mp4");
-    //VideoCapture cap3("videos/railway_s.mp4");
+    VideoCapture cap1("dataset/Jackson_Hole_Wyoming/out0.mov");
+    VideoCapture cap2("videos/railway_s.mp4");
+    VideoCapture cap3("videos/nighttraffic.mp4");
 
     PBAS *pbas1 = new PBAS(N, K, R_incdec, R_lower, R_scale, T_dec, T_inc, T_lower, T_upper, alpha);
-    //PBAS *pbas2 = new PBAS(N, K, R_incdec, R_lower, R_scale, T_dec, T_inc, T_lower, T_upper, alpha);
-    //PBAS *pbas3 = new PBAS(N, K, R_incdec, R_lower, R_scale, T_dec, T_inc, T_lower, T_upper, alpha);
-    pbas1->verbose = false; // pbas2->verbose = false; pbas3->verbose = false;
+    PBAS *pbas2 = new PBAS(N, K, R_incdec, R_lower, R_scale, T_dec, T_inc, T_lower, T_upper, alpha);
+    PBAS *pbas3 = new PBAS(N, K, R_incdec, R_lower, R_scale, T_dec, T_inc, T_lower, T_upper, alpha);
+    pbas1->verbose = false; pbas2->verbose = false; pbas3->verbose = false;
     Mat frame1, frame2, frame3;
     Mat mask1, mask2, mask3;
     
@@ -50,40 +50,39 @@ int main(int argc, char const *argv[]) {
     while(1) {
         //cout << current_frame / FPS << "s" << endl;
         cap1 >> frame1;
-        //cap2 >> frame2;
-        //cap3 >> frame3;
+        cap2 >> frame2;
+        cap3 >> frame3;
         //if (frame1.empty() || frame2.empty() || frame3.empty()) break;
 
-        //GaussianBlur(frame1, frame1, Size(3,3), 0,0);
-        //GaussianBlur(frame2, frame2, Size(3,3), 0,0);
-        //GaussianBlur(frame3, frame3, Size(3,3), 0,0);
-
         mask1 = pbas1->process(frame1);
-        //mask2 = pbas2->process(frame2);
-        //mask3 = pbas3->process(frame3);
+        // mask2 = pbas2->process(frame2);
+        // mask3 = pbas3->process(frame3);
         
         imshow("Jackson1", frame1);
         if(current_frame == 0) moveWindow("Jackson1", 0,20);
         imshow("Jackson1 mask", mask1);
-        if(current_frame == 0) moveWindow("Jackson1 mask", 420, 20);
-/*
-        imshow("Jackson2", frame2);
-        if(current_frame == 0) moveWindow("Jackson2", 10,300);
-        imshow("Jackson2 mask", mask2);
-        if(current_frame == 0) moveWindow("Jackson2 mask", 410, 300);
+        if(current_frame == 0) moveWindow("Jackson1 mask", 0, 290);
+        
+        imshow("Jackson1 flow", pbas1->flow_active);
+        if(current_frame == 0) moveWindow("Jackson1 flow", 0, 550);
 
-        imshow("Railway", frame3);
-        if(current_frame == 0) moveWindow("Railway", 10,580);
-        imshow("Railway mask", mask3);
-        if(current_frame == 0) moveWindow("Railway mask", 410, 580); */
+        // imshow("Jackson2", frame2);
+        // if(current_frame == 0) moveWindow("Jackson2", 0,300);
+        // imshow("Jackson2 mask", mask2);
+        // if(current_frame == 0) moveWindow("Jackson2 mask", 420, 300);
+
+        // imshow("Railway", frame3);
+        // if(current_frame == 0) moveWindow("Railway", 0,580);
+        // imshow("Railway mask", mask3);
+        // if(current_frame == 0) moveWindow("Railway mask", 420, 580);
 
         char c=(char)waitKey(25);
         if(c==27) break;
 
         current_frame ++;
     }
-    pbas1->~PBAS(); //pbas2->~PBAS(); pbas3->~PBAS();
-    cap1.release(); //cap2.release(); cap3.release();
+    pbas1->~PBAS(); pbas2->~PBAS(); pbas3->~PBAS();
+    cap1.release(); cap2.release(); cap3.release();
     destroyAllWindows();
     return 0;
 }

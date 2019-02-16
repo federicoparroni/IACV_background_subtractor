@@ -269,6 +269,25 @@ videos that have small variations of the gradient from frame to frame.
     }
 \end{figure}
 
+\subsection{parameter settings}
+The proposed method has a multitude of tunable parameters, their values have been chosen focusing the attention on having an algorithm robust to changing on weather condition and capable of identifying foreground object even if they stay steady for a period of time (i.e. cars stopped to a traffic light). \newline
+Experimental results have been shown that the optimal parameters are the following:
+\begin{itemize}
+\item $N = 30:$ The number of components of the
+background model. Increasing the value of this parameter let the algorithm be more robust to noise, but at the same time, increase a lot the time complexity. The value has been choosen considering the previous tradeoff.
+\item $K = 3:$ The number of components that have to
+be closer than $R(x_i)$ in order to set the pixel to be background.
+\item $R_{incdec} = 0.05:$ The rate, at which the decision
+threshold $R(x_i)$ is regulated by the controller. 
+\item $R_{lower}=18:$ Lower bound of the decision threshold. It has been left to the default value.
+\item $R_{scale}=2$ Scaling factor in the controller for the
+decision threshold. Lowering it from 5 to 2 has shown to let the algorithm to recognize better the foreground object introducing very low noise.
+\item $T_{dec} = 0.05:$ If $x_i$ is background, $T_{dec}$ is the rate at which $T(x_i)$ is decreased.
+\item $T_{inc} = 5:$ If $x_i$ is foreground, $T_{inc}$ is the rate at which $T(x_i)$ is increased. These parameter has shown to be very important to keep classified as foreground pixels associated to objects that have stopped their movement. Increasing it to 5 from the proposed value of 2 reduces faster the probability to put a steady foreground object in to one of the N components of the background model.
+\item $T_{lower}= 2:$ Lower bound of $T(x_i)$.
+\item $T_{upper}= 200:$ Upper bound of $T(x_i)$.
+\end{itemize} 
+
 
 \subsection*{Conclusion}
 We have provided a background subtraction system based on the PBAS algorithm. The system is meant to work real time in traffic surveillance scenarios, also under challening environmental conditions and heavy traffic, 24/7. In order to do this, the general purpose PBAS algorithm was studied and the hyperparameters were adapted in order to perform best in this particular scenario. We have validated our work by visual inspection in particular and challenging situations, with long videos with environmental and traffic conditions changing over time. We further experimented with shadow removal methods and we tried to exploit motion informations. Future work can be done in this direction, until arriving to a precise classification of noise and errors in the mask detected. Still, the system as it is now can be employed as a preprocessing step for many anomaly detection applications, such as car accidents, cars going in the wrong direction and people crossing the road.

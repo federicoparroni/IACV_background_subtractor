@@ -32,12 +32,16 @@ class PBAS
         float T_upper;
         float alpha;
         vector<float> I_m;
+
+        float flow_mag_threshold = 0.7;
+        int consecutive_flow_activation = 6;
         
         // frame
         vector<Mat> frame;
         vector<Mat> frame_grad;
         int w;
         int h;
+        Mat previous_frame;
 
         // model support matrices and pointers
         vector<uint8_t*> i;
@@ -48,6 +52,11 @@ class PBAS
 
         vector<Mat> R; vector<float*> r;
         vector<Mat> T; vector<float*> t;
+
+        // flow
+        //Mat flow_active;
+        vector<uint8_t*> fw;
+        vector<Mat> flow_active_history;
     
         vector<vector<Mat>> D;
         vector<Mat> d_minavg;
@@ -60,7 +69,7 @@ class PBAS
         vector<Mat> F; vector<uint8_t*> q;
 
         // methods
-        void init(const Mat &frame);
+        void init(int channels, int frametype);
         double distance(double p, double p_grad, double g, double g_grad, int c);
         //void updateMedian(int col);
 
@@ -71,6 +80,8 @@ class PBAS
         void updateR_notoptimized(int x, int y, int c, int n);
         void updateT(int x, int y, int c);
 
+        void analyzeOpticalFlow(const Mat &frame);
+
         void init_Mat(Mat &matrix, float initial_value);
         Mat gradient_magnitude(const Mat &frame);
 
@@ -80,6 +91,7 @@ class PBAS
         ~PBAS();
         
         bool verbose = true;
+        bool use_optical_flow = true;
 
         // main
         Mat process(const Mat &frame);
@@ -89,6 +101,7 @@ class PBAS
 
         //Mat median;
         Mat estimatedBg;
+        Mat flow_active;
 };
 
 
@@ -154,7 +167,9 @@ Mat PBAS::process(const Mat &frame) {
 
     // B, D, d_minavg initialization
     if (B.size() == 0) {
-        init(frame);
+        init(channels, frame.type());
+        
+        cvtColor(frame, previous_frame, COLOR_BGR2GRAY);
     }
     
     // gradients computation
@@ -175,6 +190,7 @@ Mat PBAS::process(const Mat &frame) {
     for(int c=0; c < channels; c++) {
         threads.push_back(thread(&PBAS::process_channel, this, c));
     }
+    if(use_optical_flow) threads.push_back(thread(&PBAS::analyzeOpticalFlow, this, frame));
     // wait all threads
     for(thread &t : threads) t.join();
 
@@ -188,9 +204,13 @@ Mat PBAS::process(const Mat &frame) {
     for(int c = 0; c < channels; c++) {
         bitwise_or(final_mask, F[c], final_mask);
     }
+    medianBlur(final_mask,final_mask,3);
+
     frame.copyTo(estimatedBg, 255-final_mask);
-    // medianBlur(res,res,3);
-    
+
+    Mat toshow; T[0].convertTo(toshow, CV_8UC1);
+    imshow("T", toshow); moveWindow("T", 0, 550);
+
     return final_mask;
 }
 
@@ -202,8 +222,8 @@ void PBAS::process_channel(int c) {
         this->r[c] = R[c].ptr<float>(x);
         this->t[c] = T[c].ptr<float>(x);
         //this->med = median.ptr<Vec3b>(x);
-
         this->I_m[c] = mean(this->frame_grad[c]).val[0];
+        this->fw[c] = flow_active.ptr<uint8_t>(x);
 
         for (int y=0; y < this->w; y++) {
             updateF(x, y, c);
@@ -211,16 +231,11 @@ void PBAS::process_channel(int c) {
         }
         
     }
-    // showCVMat(frame_grad[c], false, format("framegrad%d",c));
-    // showCVMat(R[c], false, format("R%d",c));
-    // showCVMat(F[c], false, format("F%d",c));
-    // showCVMat(T[c], false, format("T%d",c));
-    //medianBlur(F[c],F[c],3);
 }
 
 // initialize all support matrices
-void PBAS::init(const Mat &frame) {
-    for(int c=0; c<frame.channels(); c++) {
+void PBAS::init(int channels, int frametype) {
+    for(int c=0; c<channels; c++) {
         vector<Mat> b, b_grad, d;
         for(int n=0; n<N; n++) {
             Mat b_elem(h, w, CV_8UC1);
@@ -244,7 +259,7 @@ void PBAS::init(const Mat &frame) {
         T.push_back(Mat::zeros(h, w, CV_32FC1));
 
         d_minavg.push_back(Mat::zeros(h, w, CV_32FC1));
-
+        
         init_Mat(T[c], T_lower);
         init_Mat(R[c], 128);
 
@@ -254,8 +269,11 @@ void PBAS::init(const Mat &frame) {
         r.push_back(0);
         t.push_back(0);
         I_m.push_back(1);
+        fw.push_back(0);
     }
-    estimatedBg = Mat::ones(frame.rows, frame.cols, frame.type());
+    estimatedBg = Mat::ones(h, w, frametype);
+
+    flow_active = Mat::zeros(h, w, CV_8UC1);
 }
 
 Mat PBAS::gradient_magnitude(const Mat &frame){
@@ -411,6 +429,12 @@ void PBAS::updateT(int x, int y, int c) {
     else
         t[c][y] -= T_dec / (d_minavg[c].at<float>(x,y) + 0.1);
 
+    if(use_optical_flow) {
+        if(fw[c][y] == 0) t[c][y] -= 10;
+    }
+    
+    //if(fw[c][y] == 255) t[c][y] -= T_dec / (d_minavg[c].at<float>(x,y) + 0.1);
+
     t[c][y] = max(T_lower, t[c][y]);
     t[c][y] = min(T_upper, t[c][y]);
 }
@@ -428,6 +452,32 @@ void PBAS::updateT(int x, int y, int c) {
 //         }
 //     }
 // }
+
+void PBAS::analyzeOpticalFlow(const Mat &frame) {
+    // compute optical flow
+    Mat current_frame; cvtColor(frame, current_frame, COLOR_BGR2GRAY);
+    Mat fl; calcOpticalFlowFarneback(previous_frame, current_frame, fl, 0.5, 3, 15, 3, 5, 1.2, 0);
+    Mat flow[2]; split(fl, flow);   // split flow components in separate matrices
+    Mat mags, angles; cartToPolar(flow[0], flow[1], mags, angles);
+    
+    // detect pixels where flow magnitude is above the threshold and set to 255
+    Mat active_flow; threshold(mags, active_flow, flow_mag_threshold, 255, THRESH_BINARY);
+    active_flow.convertTo(active_flow, CV_8UC1);
+    flow_active_history.push_back(active_flow);
+    
+    // update history and active flow pixels
+    if(flow_active_history.size() >= consecutive_flow_activation) {
+        flow_active_history.erase(flow_active_history.begin());
+
+        // combine in AND all history flows
+        Mat total_hot(h, w, CV_8UC1, Scalar(255));
+        for(Mat m : flow_active_history) bitwise_and(total_hot, m, total_hot);
+        
+        // then OR to add the new active flow pixels
+        bitwise_or(flow_active, total_hot, flow_active);
+    }
+    previous_frame = current_frame;
+}
 
 
 void PBAS::showCVMat(Mat matrix, bool normalize, string window_name){
