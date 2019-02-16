@@ -119,7 +119,7 @@ background model $B_k(y_i)$ at this neighboring pixel is replaced by its current
 To change the decision treshold $R(x_i)$ is saved an array of recently observed pixel values in the background model $B(x_i)$, we also create an array $\mathbf{D}(x_i) = \{D_1(x_i ),...,D_N(x_i)\}$ of minimal decision distances. Whenever an update of $B_k(x_i)$ is carried out, the currently observed minimal distance:
 \[ d_{min}(x_i) = min_k dist(I(x_i), B_k(x_i)) \] is written to this array: $D_k(x_i) \leftarrow d_{min}(x_i)$. Thus, a history of minimal decision distances is created. The average of these values $\overline{d}_{min}(x_i) = \frac{1}{N} \sum_k D_k(x_i)$ is a measure of the background dynamics. Thanks to that
 the decision threshold can be dynamically adapted as follows:
-\begin{equation}
+\begin{equation} \label{eq:R}
 R(x_i)=\begin{cases} R(x_i)\cdot(1-R{inc/dec}) &if\ R(x_i)> \overline{d}_{min}(x_i)\cdot R_{scale} \\ R(x_i)\cdot (1+R{inc/dec}) &else  \end{cases}
 \end{equation}
 Here, $R_{inc/dec}$, $R_{scale}$ are fixed parameters. This can be seen as a dynamic controller for the state variable $R(x_i)$.
@@ -133,7 +133,7 @@ T(x_i)=\begin{cases} T(x_i)+\frac{T_{inc}}{\overline{d}_{min}(x_i)} &if \ F(x_i)
 $T_{inc}$ and $T_{dec}$ are fixed parameters. Are also defined $T_{lower}$ and $T_{upper}$ such that the values can not go out of a specific bound.
 \paragraph{Distance computation}
 The quantity $ dist(I(x_i),B_k(x_i)) $ is computed as:
-\begin{equation}
+\begin{equation} \label{eq:dist}
 \frac{\alpha}{\overline{I^m}}|I^m(x_i) - B_k^m(x_i)| + |I^v(x_i) - B_k^v(x_i)|
 \end{equation}
 where $m$ indicates the gradient magnitude and $v$ the pixel intensity value. $\overline{I_m}$ is the average gradient magnitude over the last observed frame. Thus, the fraction $\frac{\alpha}{\overline{I^m}}$ weighs the importance
@@ -194,8 +194,8 @@ background model $B$.
 
 
 \subsection*{R}
-Eq ?????????? is similar to the equation of a pure proportional controller.
-In this case the $R(x,y)$ has to follow $d_{minavg}(x,y) * R_{scale}$. So:
+Eq \ref{eq:R} is similar to the equation of a pure proportional controller.
+In this case the $R(x,y)$ has to follow $d_{minavg}(x,y)R_{scale}$. So:
 \begin{itemize}
     \item $R_{incdec}$: setting too high lead to oscillation around the target and if
     set too high leads to divergence. The default value is 0.05 which leads to fast
@@ -230,7 +230,7 @@ As we see, as $R_{scale}$ grows the tree leaves that are waved by the wind are n
 anymore as foreground but also a part of the car is lost.
 
 \subsection*{alpha}
-From eq ?????????? we see that alpha tells how much to weight the image gradients
+From eq \ref{eq:dist} we see that alpha tells how much to weight the image gradients
 with respect to the image values in the distance computation.
 \begin{figure}[!t]
     \centering
