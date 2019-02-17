@@ -82,7 +82,7 @@ dynamically change over time for each pixel separately.
 
 \section*{Proposed approach}
 To solve the presented problem we have studied deeply the PBAS algorithm, how it works, and how the hyperparameters could change the behaviour of it. After the studying of the algorithm has been chosen the parameters that have achived the better performance in our scenario. At the end have been studied how to enhanche the performance of the algorithm solving the issue of the presence of the shadows in the video, using techniques of shadows removal.
-\subsubsection{PBAS algorithm}
+\subsection{PBAS algorithm} \label{subsect:PBAS}
 
 \begin{figure*}
   \includegraphics[width=\textwidth]{Figures/PBAS_state_machine.png}
@@ -140,9 +140,10 @@ where $m$ indicates the gradient magnitude and $v$ the pixel intensity value. $\
 of pixel values against the gradient magnitude
 
 \section*{Experiments}
-In this section we first report the results obtained by varying the main model parameters. We also include the
-adopted settings that perform best in our scenario. Then, we show some real-case usages of the algorithm,
-comparing the different environmental conditions that we found in 24/24h live videos.
+
+In this section we first report the results obtained by varying the main model parameters. We also include the adopted settings that perform best in our scenario. Then, we show some real-case usages of the algorithm, comparing different environmental conditions that we found in 24/24h live videos. Next, are reported experiments made with 
+
+\subsection{Hyperparameters}
 
 \subsection*{N}
 $N$ represents how many matrices are kept in memory to model the background.
@@ -204,11 +205,7 @@ Since one of the objective of the work is to have a robust classification of the
 Eq \ref{eq:R} is similar to the equation of a pure proportional controller.
 In this case the $R(x,y)$ has to follow $d_{minavg}(x,y)R_{scale}$. So:
 \begin{itemize}
-    \item $R_{incdec}$: setting too high lead to oscillation around the target and if
-    set too high leads to divergence. The default value is 0.05 which leads to fast
-    enough adaptation to the target value (in more or less 30 frames the target is
-    reached). Assuming that the backgroud isnt changing much there is no reason to
-    raise it.
+    \item $R_{incdec}$: it can be seen as the propositional constant of the controller: setting too high lead to oscillation around the target and if set too high leads to divergence. Setting too low leads to slow convergence to the target values, making the algorithm too slow to adapt to dynamic backgrounds.
     \item $R_{scale}$: tells how much the algorithm is sensitive, in fact it is a direct
     control of the threshold. Setting too high it leads to really few false positives
     but also decreases true positives; setting too low, will increase false positives.
@@ -232,19 +229,19 @@ In this case the $R(x,y)$ has to follow $d_{minavg}(x,y)R_{scale}$. So:
     \subfloat[][$R_{scale}$ = 50]{
         \includegraphics[width=0.45\textwidth]{Figures/R_scale50.jpg}
     }
+    \caption{As $R_{scale}$ grows the tree leaves that are waved by the wind are not detected
+anymore as foreground but also a part of the car is lost.}
 \end{figure}
-As we see, as $R_{scale}$ grows the tree leaves that are waved by the wind are not detected
-anymore as foreground but also a part of the car is lost.
 
-\subsection*{alpha}
-From eq \ref{eq:dist} we see that alpha tells how much to weight the image gradients
+\subsection*{$\alpha$}
+From eq \ref{eq:dist} we see that $\alpha$ tells how much to weight the image gradients
 with respect to the image values in the distance computation.
-\begin{figure}[!t]
-    \centering
-    \includegraphics[width=0.45\textwidth]{Figures/gradients.jpg}
-    \caption{Gradients}
-    \label{fig:gradients}
-\end{figure}
+%\begin{figure}[!t]
+%    \centering
+%    \includegraphics[width=0.45\textwidth]{Figures/gradients.jpg}
+%    \caption{Gradients}
+%    \label{fig:gradients}
+%\end{figure}
 As we see, the image gradients give a good cue to distinguish the street from the cars
 (image absolute values are not, since many cars have almost the same color of the
 street). So alpha should be set high, in order to take into consideration this fact.
@@ -267,27 +264,45 @@ videos that have small variations of the gradient from frame to frame.
     \subfloat[][$\alpha$ = 50]{
         \includegraphics[width=0.45\textwidth]{Figures/alpha50.jpg}
     }
+    \caption{The influence of the image gradients. In \textbf{(a)} is reported the mask not considering the gradients ($\alpha = 0$). Going toward the bottom, we see the good influence on the detection, but we also witness an increase of the noise.}
 \end{figure}
 
-\subsection{parameter settings}
-The proposed method has a multitude of tunable parameters, their values have been chosen focusing the attention on having an algorithm robust to changing on weather condition and capable of identifying foreground object even if they stay steady for a period of time (i.e. cars stopped to a traffic light). \newline
-Experimental results have been shown that the optimal parameters are the following:
+\subsection{Optimal Setting}
+The proposed method has a multitude of tunable parameters, their values have been chosen focusing the attention on having an algorithm robust to changing on weather condition and capable of identifying foreground object even if they stay steady for a period of time (i.e. cars stopped to a traffic light), still guaranteeing a real time behaviour. \newline
+Experimental results have shown that the optimal parameters are the following:
 \begin{itemize}
 \item $N = 30:$ The number of components of the
 background model. Increasing the value of this parameter let the algorithm be more robust to noise, but at the same time, increase a lot the time complexity. The value has been choosen considering the previous tradeoff.
-\item $K = 3:$ The number of components that have to
-be closer than $R(x_i)$ in order to set the pixel to be background.
-\item $R_{incdec} = 0.05:$ The rate, at which the decision
-threshold $R(x_i)$ is regulated by the controller. 
-\item $R_{lower}=18:$ Lower bound of the decision threshold. It has been left to the default value.
-\item $R_{scale}=2$ Scaling factor in the controller for the
-decision threshold. Lowering it from 5 to 2 has shown to let the algorithm to recognize better the foreground object introducing very low noise.
+\item $K = 3:$ The number of components that have to be closer than $R(x_i)$ in order to set the pixel to be background. It has been left to the value proposed in the original paper.
+\item $R_{incdec} = 0.05:$ Proportial constant of the controller for the variable $R(x_i)$. The value 0.05 leads to pretty fast adaptation to the target value of $R(x_i)$ (in more or less 30 frames the target is reached). Considering that our target are long periods of time there is no reason to raise it.
+\item $R_{lower}=18:$ Lower bound of the decision threshold. It has been left to the value proposed in the original paper, since we found that raising it would lead to a significant decrease in true positive and lowering it would let too much noise in.
+\item $R_{scale}=2$ Scaling factor in the controller for the decision threshold. Setting it to 2 has shown to let the algorithm to recognize better the foreground object while introducing very low noise.
 \item $T_{dec} = 0.05:$ If $x_i$ is background, $T_{dec}$ is the rate at which $T(x_i)$ is decreased.
 \item $T_{inc} = 5:$ If $x_i$ is foreground, $T_{inc}$ is the rate at which $T(x_i)$ is increased. These parameter has shown to be very important to keep classified as foreground pixels associated to objects that have stopped their movement. Increasing it to 5 from the proposed value of 2 reduces faster the probability to put a steady foreground object in to one of the N components of the background model.
 \item $T_{lower}= 2:$ Lower bound of $T(x_i)$.
 \item $T_{upper}= 200:$ Upper bound of $T(x_i)$.
+\item $\alpha = 20:$ Weight to give to image gradients. The proposed value is high because this shows to be a good cue for distinguishing car objects
 \end{itemize} 
 
+\subsection{RGB vs Grey}
+We have experimented with a version of the algorithm working just on grey scale images and with one exploiting also color informations. The grey one is implementing exactly all the steps described in \ref{subsect:PBAS}. The RGB version is running the Grey version for any of the three channels and then the final mask is computed as the Logical-OR of the three masks obtained for each of the three channels.
+Experiments show that the RGB version has a better cars detection capabilities, but it proves to be computationally heavy, breaking totally the real time capabilities that we manage to achieve. Moreover, the behaviour proves to be better, but it doesn't justify the cost of having a non-realtime algorithm. 
+
+\begin{figure}[!t]
+    \centering
+    \subfloat[][Grey]{
+        \includegraphics[width=0.45\textwidth]{Figures/grey.png}
+    }
+    \newline
+    \subfloat[][RGB]{
+        \includegraphics[width=0.45\textwidth]{Figures/rgb.png}
+    }
+	\caption{RGB version compared with the Grey one. As we see, there is some difference present but it is negligible}
+\end{figure}
+
+\subsection{Long Period Experiments}
+
+\subsection{Algorithm Validation}
 
 \subsection*{Conclusion}
 We have provided a background subtraction system based on the PBAS algorithm. The system is meant to work real time in traffic surveillance scenarios, also under challening environmental conditions and heavy traffic, 24/7. In order to do this, the general purpose PBAS algorithm was studied and the hyperparameters were adapted in order to perform best in this particular scenario. We have validated our work by visual inspection in particular and challenging situations, with long videos with environmental and traffic conditions changing over time. We further experimented with shadow removal methods and we tried to exploit motion informations. Future work can be done in this direction, until arriving to a precise classification of noise and errors in the mask detected. Still, the system as it is now can be employed as a preprocessing step for many anomaly detection applications, such as car accidents, cars going in the wrong direction and people crossing the road.
