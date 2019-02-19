@@ -294,7 +294,7 @@ Experimental results have shown that the optimal parameters are the following:
 \begin{itemize}
 \item $N = 30:$ The number of components of the
 background model. Increasing the value of this parameter let the algorithm be more robust to noise, but at the same time, increase a lot the time complexity. The value has been choosen considering the previous tradeoff.
-\item $K = 3:$ The number of components that have to be closer than $R(x_i)$ in order to set the pixel to be background. It has been left to the value proposed in the original paper.
+\item $K = 3:$ The number of components that have to be closer than $R(x_i)$ in order to set the pixel to be background. We raise it to 3 (instead of 2) because we want to be stricter in the background classification, since cars are often segmented only near the borders and masks present holes in the central area, probably because the car color is matched with some previous background pixels.
 \item $R_{incdec} = 0.05:$ Proportial constant of the controller for the variable $R(x_i)$. The value 0.05 leads to pretty fast adaptation to the target value of $R(x_i)$ (in more or less 30 frames the target is reached). Considering that our target are long periods of time there is no reason to raise it.
 \item $R_{lower}=18:$ Lower bound of the decision threshold. It has been left to the value proposed in the original paper, since we found that raising it would lead to a significant decrease in true positive and lowering it would let too much noise in.
 \item $R_{scale}=2$ Scaling factor in the controller for the decision threshold. Setting it to 2 has shown to let the algorithm to recognize better the foreground object while introducing very low noise.
@@ -305,9 +305,15 @@ background model. Increasing the value of this parameter let the algorithm be mo
 \item $\alpha = 20:$ Weight to give to image gradients. The proposed value is high because this shows to be a good cue for distinguishing car objects
 \end{itemize} 
 
-\subsection{RGB vs Grey}
-We have experimented with a version of the algorithm working just on grey scale images and with one exploiting also color informations. The grey one is implementing exactly all the steps described in \ref{subsect:PBAS}. The RGB version is running the Grey version for any of the three channels and then the final mask is computed as the Logical-OR of the three masks obtained for each of the three channels.
-Experiments show that the RGB version has a better cars detection capabilities, but it proves to be computationally heavy, breaking totally the real time capabilities that we manage to achieve. Moreover, the behaviour proves to be better, but it doesn't justify the cost of having a non-realtime algorithm. 
+\subsection{Long Period Experiments}
+
+\subsection{Algorithm Validation}
+
+\section*{Improvements}
+
+\subsection*{RGB vs Grey}
+We have experimented with a version of the algorithm working just on grey scale images and with one exploiting also color informations. The grey one is implementing exactly all the steps described in \ref{subsect:PBAS}. The RGB version runs the greyscale version for each of the three channels in parallel threads and then the final mask is computed as the logical-OR of the three masks obtained from the three channels.
+Experiments show that the RGB version has better cars detection capabilities, but obviuosly computationally heavier. We could not be able to try with a 4-core CPU, but in theory this can bring times down to the grayscale version, since the 3 channels can be computed quickly expoliting parallelism.
 
 \begin{figure}[!t]
     \centering
@@ -321,9 +327,35 @@ Experiments show that the RGB version has a better cars detection capabilities, 
 	\caption{RGB version compared with the Grey one. As we see, there is some difference present but it is negligible}
 \end{figure}
 
-\subsection{Long Period Experiments}
+\subsection*{Optical flow analysis}
+The algorithm is fully based on the variations of a pixel intensity over time. This cannot be enough in some situations to provide a correct segmentation, for example, we noticed that a traffic light is classified as a foreground element because it emits 3 different light colors that vary a lot from each other and very quickly from frame to frame (this problem has a more evident impact especially when using 3-channels videos). We can resort to optical flow to detect this kind of issues: in fact, optical flow provides a measure of the motion of pixels in consecutive frames, so in the previous case the flow of pixels in the area of the traffic light will not be present. So, we can discriminate pixels that have flow and pixels that have not, changing different parameters of the PBAS for these two categories.
 
-\subsection{Algorithm Validation}
+We built a model to determine which pixels had an "active" flow in the past, and in some sense these pixels represents road areas subject to traffic. We adopted the Farneback dense optical flow algorithm to get the flow of each pixel of the frame. Then, we checked which pixels had a flow magnitude over a certain threshold $W_{min}$ and we stored this information in a history of L previous samples. If the magnitude of the flow was greater then $W_{min}$ for L consecutive frames, than the pixel is classified as "flow-active". For all the "flow-active" pixels, we applied some ad-hoc adjustments for the PBAS parameters, in particular we decremented the update frequency T by a constant to penalyze the chances of those pixels to be inserted in the background model. Further changes can be done, however are out of the scope of this project.
 
-\subsection*{Conclusion}
+\begin{figure}[!t]
+    \centering
+    \subfloat[][No optical flow]{
+        \includegraphics[width=0.45\textwidth]{Figures/noflow.jpg}
+    }
+    \newline
+    \subfloat[][Optical flow]{
+        \includegraphics[width=0.45\textwidth]{Figures/flow.jpg}
+    }
+	\caption{Optical flow version compared with the naive version. The former one is aware of areas that have an "active flow" and put those pixels in the background model less frequent, e.g. the traffic light on the right.}
+\end{figure}
+
+\subsection*{Improvements and computational impact}
+We report here the time (in ms) required to analyze one frame using our implementation of the PBAS algorithm, with and without the proposed improvements. The algorithm has been run on a Macbook Pro mounting an Intel Core i5 2.3 GHz and 8 GB 2133MHz of LPDDR3 RAM, using as input 426x240 frames. Performances can drastically be raised by running it on a 4-core CPU (that is able to handle the 3 threads of the RBG channels in parallel) or on a GPU.
+
+\begin{table}[]
+\begin{tabular}{l|c}
+    Algorithm                                     & Average time \\
+    \hline
+    PBAS on grayscale video                       & 90ms         \\
+    PBAS on RBG video                             & 180ms        \\
+    PBAS on RBG video with optical flow analysis  & 200ms        
+\end{tabular}
+\end{table}
+
+\section*{Conclusion}
 We have provided a background subtraction system based on the PBAS algorithm. The system is meant to work real time in traffic surveillance scenarios, also under challening environmental conditions and heavy traffic, 24/7. In order to do this, the general purpose PBAS algorithm was studied and the hyperparameters were adapted in order to perform best in this particular scenario. We have validated our work by visual inspection in particular and challenging situations, with long videos with environmental and traffic conditions changing over time. We further experimented with shadow removal methods and we tried to exploit motion informations. Future work can be done in this direction, until arriving to a precise classification of noise and errors in the mask detected. Still, the system as it is now can be employed as a preprocessing step for many anomaly detection applications, such as car accidents, cars going in the wrong direction and people crossing the road.
