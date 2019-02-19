@@ -199,7 +199,18 @@ In the other ideal case of a fully static background, a classification as foregr
 $T_{upper}, T_{lower}:$ control respectively the lowest and the highest probability of updating a pixel and putting it in the
 background model $B$. \newline
 $T_{inc}, T_{dec}:$ are fixed parameters and control the update of the controller T of each pixel, has been chosen to differentiate the two quantity since the pixels that are background are usually the largest part so choosing different parameters can lead to a better perfomance.\newline
-Since one of the objective of the work is to have a robust classification of the foreground objects, we want to find the best values for the T parameters such that an object if classified as foreground stay as it for the longest period of time. INSERIRE IMMAGINI
+Since one of the objective of the work is to have a robust classification of the foreground objects, we want to find the best values for the T parameters such that an object if classified as foreground stay as it for the longest period of time. 
+\begin{figure}[!t]
+    \centering
+    \subfloat[][$T_{inc}$ = 1]{
+        \includegraphics[width=0.45\textwidth]{Figures/T_inc_1.png}
+    }
+    \newline
+    \subfloat[][$T_{inc}$ = 5]{
+        \includegraphics[width=0.45\textwidth]{Figures/T_inc_5.png}
+    }
+    \caption{Have an higher $T_{inc}$ means decreasing faster the probability that a pixel is included in the background model once it is classified as foreground. Clearly visible in the two image reporting a car stopped for $30s$.}
+\end{figure}
 
 
 \subsection*{R}
@@ -267,6 +278,15 @@ videos that have small variations of the gradient from frame to frame.
     }
     \caption{The influence of the image gradients. In \textbf{(a)} is reported the mask not considering the gradients ($\alpha = 0$). Going toward the bottom, we see the good influence on the detection, but we also witness an increase of the noise.}
 \end{figure}
+
+\subsection{Post-processing}
+To enhance the performance of the algorithm is applied on the final mask a median-filter using a square kernel. Since the value of the pixels can be 0 or 255 is equivalent to perform a majority voting among the kernel's pixels to decide the value of the middle one. That has shown to reduce the noise on the final mask and in the meanwhile generate more connected components. The size chosen for the kernel after different experiments is $5\times 5$.
+
+\begin{figure}
+\includegraphics[width=\linewidth]{Figures/median_blur.png}
+\caption{Comparison between output whitout post-processing 			and with median-blur post-processing}
+\end{figure}
+
 
 \subsection{Optimal Setting}
 The proposed method has a multitude of tunable parameters, their values have been chosen focusing the attention on having an algorithm robust to changing on weather condition and capable of identifying foreground object even if they stay steady for a period of time (i.e. cars stopped to a traffic light), still guaranteeing a real time behaviour. \newline
