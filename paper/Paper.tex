@@ -81,7 +81,8 @@ dynamically change over time for each pixel separately.
 
 
 \section*{Proposed approach}
-To solve the presented problem we have studied deeply the PBAS algorithm, how it works, and how the hyperparameters could change the behaviour of it. After the studying of the algorithm has been chosen the parameters that have achived the better performance in our scenario. At the end have been studied how to enhanche the performance of the algorithm solving the issue of the presence of the shadows in the video, using techniques of shadows removal.
+Initially, we studied deeply the PBAS algorithm as originally thought: how it works and how the hyperparameters change its behaviour. Then we implemented it in a very efficient way using C++ and we further analyzed the quality of this first basic version. This shed light upon some improvements for important aspects as we see in the following sections.
+At the end, we have chosen the parameters that achieved the best performance in our scenario.
 \subsection{PBAS algorithm} \label{subsect:PBAS}
 
 \begin{figure*}
