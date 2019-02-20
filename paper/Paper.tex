@@ -194,7 +194,7 @@ The controller $T(x_i)$ associated to each pixel, is introduced with the idea to
 In case of highly dynamic background (i.e. big $\overline{d}_{min}(x_i)$), the learning parameter $T(x_i)$ stays constant or only slightly changes. In this case of highly dynamic background, erroneously detected foreground will not remain for long, be-
 cause the probability to update $p = 1/T(x_i)$ does not reach
 zero too fast. \newline
-In the other ideal case of a fully static background, a classification as foreground is quite solid. \newline
+In the other ideal case of a fully static background, a classification as foreground is quite solid so $T(x_i)$ can be rapidly increased or decreased. \newline
 $T_{upper}, T_{lower}:$ control respectively the lowest and the highest probability of updating a pixel and putting it in the
 background model $B$. \newline
 $T_{inc}, T_{dec}:$ are fixed parameters and control the update of the controller T of each pixel, has been chosen to differentiate the two quantity since the pixels that are background are usually the largest part so choosing different parameters can lead to a better perfomance.\newline
