@@ -17,18 +17,8 @@
 
 \section*{Abstract}
 \begin{abstract}
-\textit{	Abstract-} In this paper we present a method for background subtraction with the aim to work on a 24/24h videos
-scenario, real time, robust to weather changes and capable to keep foreground objects detected for a
-large amount of time. The work is the base to implement a monitoring system for dangerous event in
-the road (possible scenario is the monitoring system on highways). The system can be expanded to
-detect events such as car driving in the wrong direction, car accidents or people crossing the road.
-The model studied is the PBAS (Pixel-Based Adaptive Segmenter): it follows a parametric background
-modeling paradigm, thus the background is modeled by a history of recently observed pixel values.
-The foreground decision depends on a decision threshold. The background update is based on a learning
-parameter. Both parameters are extended to dynamic per-pixel state variables and introduce dynamic
-controllers for each of them. Furthermore, both controllers are steered by an estimate of the background
-dynamics. All the hyperparameters of the models have been studied and tuned minutely to accomplish the
-aimed task.
+In this paper we present a method for background subtraction with the aim to work on a 24/24h videos scenario, real time, robust to weather changes and capable to keep foreground objects detected for a large amount of time. The work is the base to implement a monitoring system for dangerous event in the road (possible scenario is the monitoring system on highways). The system can be expanded to detect events such as car driving in the wrong direction, car accidents or people crossing the road.
+The model studied is the PBAS (Pixel-Based Adaptive Segmenter): it follows a parametric background modeling paradigm, thus the background is modeled by a history of recently observed pixel values. The foreground decision depends on a decision threshold. The background update is based on a learning parameter. Both parameters are extended to dynamic per-pixel state variables and introduce dynamic controllers for each of them. Furthermore, both controllers are steered by an estimate of the background dynamics. All the hyperparameters of the models have been studied and tuned minutely to accomplish the aimed task. Then we will also explain which additions we introduce in the algorithm to improve its performance in our particular scenario.
 \end {abstract}
 
 \begin{keywords}
@@ -41,7 +31,7 @@ aimed task.
 Background subtraction and foreground detection are the basic tasks of many real application systems,
 for example, surveillance systems, autonomous vehicles, semantic image analysis. Background subtraction
 consists in finding a category for every pixel in a single or (like in this case) in a frames sequence
-of a video and saying if that pixels are part of background or foreground. At the end, the algorithm take as input a video and output a binary mask, where 1s are foreground pixels and 0 background pixels.
+of a video and saying if that pixels are part of background or foreground. At the end, the algorithm take as input a video and output a binary mask, where 1s are foreground pixels and 0s background pixels.
 We restricted our domain to traffic monitoring, in particular this work should put the basis for an automated
 tool to identify cars and detect anomalies in highways and roads 24/24h (e.g. car accidents,
 traffic jam, wrong-direction driving) using a standard RGB stationary camera.
@@ -59,40 +49,29 @@ that a moving car that stops after a while will be classified as foreground for 
 into background, while the opposite event (from static to moving) is easier to handle.
 The entire algorithm has been implemented in C++, since compiled code performances are fundamental to
 allow the system to work in real-time. In \cite{pbas_and_scene_analysis_fpga}, we can find an integration of
-the basic algorithm in a FPGA device, which exploit and hardware implementation to reduce a lot the
-computational time.
-
+the basic algorithm in a FPGA device, which exploit and hardware implementation to reduce a lot the computational time.
 
 \section*{Related work}
 Over the recent past, a multitude of algorithms and methods for background modeling have been developed.
-One of the most prominent and most widely used methods are those based on Gaussian Mixture Models (GMM)
-
-\cite{gmm}. Here, each pixels is modeled as a mixture of weighted Gaussian distributions. Pixels, which
-are detected as background are used to improve the Gaussian mixtures by an iterative update rule. A very
-important non-parametric method is the ViBe \cite{vibe}. Each pixel in the background model is defined by
-a history of the N most recent image values at each pixel and uses a random scheme to update them.
-More over, updated pixels can ”diffuse” their current pixel value into neighboring pixel using another
-random selection method. The preceding scheme is very similar to the approach followed by the PBAS algorithm.
-It can be categorized as a non-parametric method, since it uses a history of N image values as the background
-model, and uses a random update rule similar to the one used by the ViBe algorithm. However, in ViBe, the
-randomness parameters as well as the decision threshold are fixed for all pixels. In contrast, in the PBAS
-algorithm these values are not treated as parameters, but instead as adaptive state variables, which can
-dynamically change over time for each pixel separately.
+One of the most prominent and most widely used methods are those based on Gaussian Mixture Models (GMM) \cite{gmm}. Here, each pixels is modeled as a mixture of weighted Gaussian distributions. Pixels, which are detected as background are used to improve the Gaussian mixtures by an iterative update rule. A very important non-parametric method is the ViBe \cite{vibe}. Each pixel in the background model is defined by a history of the N most recent image values at each pixel and uses a random scheme to update them.
+More over, updated pixels can ”diffuse” their current pixel value into neighboring pixel using another random selection method. The preceding scheme is very similar to the approach followed by the PBAS algorithm.
+It can be categorized as a non-parametric method, since it uses a history of N image values as the background model, and uses a random update rule similar to the one used by the ViBe algorithm. However, in ViBe, the randomness parameters as well as the decision threshold are fixed for all pixels. In contrast, in the PBAS algorithm these values are not treated as parameters, but instead as adaptive state variables, which can dynamically change over time for each pixel separately.
 
 
 \section*{Proposed approach}
 Initially, we studied deeply the PBAS algorithm as originally thought: how it works and how the hyperparameters change its behaviour. Then we implemented it in a very efficient way using C++ and we further analyzed the quality of this first basic version. This shed light upon some improvements for important aspects as we see in the following sections.
 At the end, we have chosen the parameters that achieved the best performance in our scenario.
+
 \subsection{PBAS algorithm} \label{subsect:PBAS}
 
+This section describes the Pixel-Based Adaptive Segmenter, which follows a non-parametric paradigm. Thus, every pixel $x_i$ is modeled by an array of recently observed background values. The method consists of several components which are depicted as a state machine in Figure 1. As a central component, the decision block decides for or against foreground based on the current image and a background model $B(x_i)$. This decision is based on the per-pixel threshold $R(x_i)$. Moreover, the background model has to be updated over time in order to allow for gradual background changes. In the model, this update depends on a per-pixel learning parameter $T(x_i)$.
+\newline
 \begin{figure*}
-  \includegraphics[width=\textwidth]{Figures/PBAS_state_machine.png}
-  \caption{PBAS state machine.}
+    \includegraphics[width=\textwidth]{Figures/PBAS_state_machine.png}
+    \caption{PBAS state machine.}
 \end{figure*}
 
-This section describes the Pixel-Based Adaptive Segmenter, which follows a non-parametric paradigm. Thus,
-every pixel $x_i$ is modeled by an array of recently observed background values. The method consists of several components which are depicted as a state machine in Figure 1. As a central component, the decision block decides for or against foreground
-based on the current image and a background model $B(x_i)$. This decision is based on the per-pixel threshold $R(x_i)$. Moreover, the background model has to be updated over time in order to allow for gradual background changes. In the model, this update depends on a per-pixel learning parameter $T(x_i)$. \newline The background model $B(x_i)$ is defined by an array of N recently observed pixel values:
+The background model $B(x_i)$ is defined by an array of N recently observed pixel values:
 \begin{equation}
 \mathbf{B}(x_i) = \{B_1(x_i),...,B_k(x_i),...,B_N(x_i)\}
 \end{equation}
@@ -196,9 +175,8 @@ In case of highly dynamic background (i.e. big $\overline{d}_{min}(x_i)$), the l
 cause the probability to update $p = 1/T(x_i)$ does not reach
 zero too fast. \newline
 In the other ideal case of a fully static background, a classification as foreground is quite solid so $T(x_i)$ can be rapidly increased or decreased. \newline
-$T_{upper}, T_{lower}:$ control respectively the lowest and the highest probability of updating a pixel and putting it in the
-background model $B$. \newline
-$T_{inc}, T_{dec}:$ are fixed parameters and control the update of the controller T of each pixel, has been chosen to differentiate the two quantity since the pixels that are background are usually the largest part so choosing different parameters can lead to a better perfomance.\newline
+$T_{upper}$, $T_{lower}$: control respectively the lowest and the highest probability of updating a pixel and putting it in the background model $B$. \newline
+$T_{inc}$, $T_{dec}$: are fixed parameters and control the update of the controller T of each pixel, has been chosen to differentiate the two quantity since the pixels that are background are usually the largest part so choosing different parameters can lead to a better perfomance.\newline
 Since one of the objective of the work is to have a robust classification of the foreground objects, we want to find the best values for the T parameters such that an object if classified as foreground stay as it for the longest period of time. 
 \begin{figure}[!t]
     \centering
@@ -245,7 +223,7 @@ In this case the $R(x,y)$ has to follow $d_{minavg}(x,y)R_{scale}$. So:
 anymore as foreground but also a part of the car is lost.}
 \end{figure}
 
-\subsection*{$\alpha$}
+\subsection*{$\bm{\alpha}$}
 From eq \ref{eq:dist} we see that $\alpha$ tells how much to weight the image gradients
 with respect to the image values in the distance computation.
 %\begin{figure}[!t]
@@ -284,7 +262,7 @@ To enhance the performance of the algorithm is applied on the final mask a media
 
 \begin{figure}
 \includegraphics[width=\linewidth]{Figures/median_blur.png}
-\caption{Comparison between output whitout post-processing 			and with median-blur post-processing}
+\caption{Comparison between output whitout post-processing and with median-blur post-processing}
 \end{figure}
 
 
@@ -349,7 +327,11 @@ Experiments show that the RGB version has better cars detection capabilities, bu
     \subfloat[][RGB]{
         \includegraphics[width=0.45\textwidth]{Figures/rgb.png}
     }
-	\caption{RGB version compared with the Grey one. As we see, there is some difference in the detection accuracy}
+    \newline
+    \subfloat[][Gray and RBG on intermittent motion video]{
+        \includegraphics[width=0.45\textwidth]{Figures/rgbvsgray.jpg}
+    }
+    \caption{Comparison between grayscale and RBG versions of the PBAS. As we see, there are some differences in the detection accuracy. In good light situations, e.g. sunny days, the RGB version provide better foreground masks and less noise.}
 \end{figure}
 
 \subsection*{Optical flow analysis}
