@@ -66,9 +66,8 @@ Metrics eval(string path) {
     for (int i=0; i < inputs.size(); i++){
         Mat input, gt, mask;
         input = imread(inputs[i].string(), CV_LOAD_IMAGE_COLOR);
-
-        cvtColor(input, input, cv::COLOR_RGB2GRAY);
-        mask = *(pbas->process(input));
+        // cvtColor(input, input, cv::COLOR_RGB2GRAY);
+        mask = *(pbas->process(&input));
 
         if (i+1 >= temporal_ROI_beg && i+1 <= temporal_ROI_end) {
             gt = imread(gts[i].string(), CV_8UC1);
@@ -94,8 +93,8 @@ Metrics eval(string path) {
     float fnr = (float)fn/(tn+fp);
     float pwc = 100*((float)fn+fp)/(tp+fn+fp+tn);
 
-    // cout << "tp: " + to_string(tp) + " -- tn: " + to_string(tn) + " -- fn: " + to_string(fn) + " -- fp: " + to_string(fp) + "\n" << endl;
-    // cout << "re: " + to_string(re) + " -- sp: " + to_string(sp) + " -- fpr: " + to_string(fpr) + " -- fnr: " + to_string(fnr) + " -- pwc: " + to_string(pwc) + " -- f1: " + to_string(f1) + " -- pr: " + to_string(pr) << endl;
+    cout << "tp: " + to_string(tp) + " -- tn: " + to_string(tn) + " -- fn: " + to_string(fn) + " -- fp: " + to_string(fp) + "\n" << endl;
+    cout << "re: " + to_string(re) + " -- sp: " + to_string(sp) + " -- fpr: " + to_string(fpr) + " -- fnr: " + to_string(fnr) + " -- pwc: " + to_string(pwc) + " -- f1: " + to_string(f1) + " -- pr: " + to_string(pr) << endl;
     
     return {re, sp, fpr, fnr, pwc, f1, pr};
 }
