@@ -18,7 +18,7 @@
 \section*{Abstract}
 \begin{abstract}
 In this paper we present a method for background subtraction with the aim to work on a 24/24h videos scenario, real time, robust to weather changes and capable to keep foreground objects detected for a large amount of time. The work is the base to implement a monitoring system for dangerous event in the road (possible scenario is the monitoring system on highways). The system can be expanded to detect events such as car driving in the wrong direction, car accidents or people crossing the road.
-The model studied is the PBAS (Pixel-Based Adaptive Segmenter): it follows a parametric background modeling paradigm, thus the background is modeled by a history of recently observed pixel values. The foreground decision depends on a decision threshold. The background update is based on a learning parameter. Both parameters are extended to dynamic per-pixel state variables and introduce dynamic controllers for each of them. Furthermore, both controllers are steered by an estimate of the background dynamics. All the hyperparameters of the models have been studied and tuned minutely to accomplish the aimed task. Then we will also explain which additions we introduce in the algorithm to improve its performance in our particular scenario.
+The model studied is the PBAS (Pixel-Based Adaptive Segmenter): it follows a non-parametric background modeling paradigm, thus the background is modeled by a history of recently observed pixel values. The foreground decision depends on a decision threshold. The background update is based on a learning parameter. Both parameters are extended to dynamic per-pixel state variables and introduce dynamic controllers for each of them. Furthermore, both controllers are steered by an estimate of the background dynamics. All the hyperparameters of the models have been studied and tuned minutely to accomplish the aimed task. Then we will also explain which additions we introduce in the algorithm to improve its performance in our particular scenario.
 \end {abstract}
 
 \begin{keywords}
@@ -30,8 +30,7 @@ The model studied is the PBAS (Pixel-Based Adaptive Segmenter): it follows a par
 \section*{Introduction}
 Background subtraction and foreground detection are the basic tasks of many real application systems,
 for example, surveillance systems, autonomous vehicles, semantic image analysis. Background subtraction
-consists in finding a category for every pixel in a single or (like in this case) in a frames sequence
-of a video and saying if that pixels are part of background or foreground. At the end, the algorithm take as input a video and output a binary mask, where 1s are foreground pixels and 0s background pixels.
+consists in classifying as foreground or background every single pixel belonging to a frame of a video sequence. At the end, the algorithm take as input a video and output a binary mask, where 1s are foreground pixels and 0s background pixels.
 We restricted our domain to traffic monitoring, in particular this work should put the basis for an automated
 tool to identify cars and detect anomalies in highways and roads 24/24h (e.g. car accidents,
 traffic jam, wrong-direction driving) using a standard RGB stationary camera.
@@ -39,11 +38,7 @@ Critical aspects that must be taken into account while developing such algorithm
 variable and bad weather conditions and illumination changes. In fact, it is very hard to distinguish
 moving objects in presence of heavy rain, fog or snow. Also during night the environmental situation varies
 a lot from the day and our algorithm has to adapt continuosly due to this facts. 
-Other problems that we faced are shadows and intermittent object motion.
-From the majority of the current algorithms, shadows are treated as foreground because they move along with
-objects; a little number of them adopts a 3-class classification (background, foreground, shadow). We
-decided to provide a binary classification, considering shadows as part of the background. With regards to
-the latter problem, here the challenge is to correctly detect an initially stationary object that begins to
+Another problem that we faced is intermittent object motion. Here the challenge is to correctly detect an initially stationary object that begins to
 move or when an object that was static starts moving again. We fine-tuned some parameters to make sure
 that a moving car that stops after a while will be classified as foreground for a long time before turning
 into background, while the opposite event (from static to moving) is easier to handle.
@@ -54,7 +49,7 @@ the basic algorithm in a FPGA device, which exploit and hardware implementation 
 \section*{Related work}
 Over the recent past, a multitude of algorithms and methods for background modeling have been developed.
 One of the most prominent and most widely used methods are those based on Gaussian Mixture Models (GMM) \cite{gmm}. Here, each pixels is modeled as a mixture of weighted Gaussian distributions. Pixels, which are detected as background are used to improve the Gaussian mixtures by an iterative update rule. A very important non-parametric method is the ViBe \cite{vibe}. Each pixel in the background model is defined by a history of the N most recent image values at each pixel and uses a random scheme to update them.
-More over, updated pixels can ”diffuse” their current pixel value into neighboring pixel using another random selection method. The preceding scheme is very similar to the approach followed by the PBAS algorithm.
+Moreover, updated pixels can ”diffuse” their current pixel value into neighboring pixel using another random selection method. The preceding scheme is very similar to the approach followed by the PBAS \cite{pbas} algorithm.
 It can be categorized as a non-parametric method, since it uses a history of N image values as the background model, and uses a random update rule similar to the one used by the ViBe algorithm. However, in ViBe, the randomness parameters as well as the decision threshold are fixed for all pixels. In contrast, in the PBAS algorithm these values are not treated as parameters, but instead as adaptive state variables, which can dynamically change over time for each pixel separately.
 
 
@@ -82,7 +77,7 @@ the foreground segmentation mask is calculated as:
 \begin{equation} \label{eq:F}
 F(x_i) = \begin{cases} 1,& \#\{dist(I(x_i), B_k(x_i)) < R(x_i)\} < K \\0 &else\end{cases}
 \end{equation}
-$F = 1$ implies foreground. The decision involves two parameters: the distance threshold $R(x_i)$,which is defined for each pixel separately and which can change dynamically; and the minimum number $K$, which is a fixed global parameter.
+$F = 1$ implies foreground. The decision involves two parameters: the distance threshold $R(x_i)$, which is defined for each pixel separately and which can change dynamically; and the minimum number $K$, which is a fixed global parameter.
 \paragraph{Update B}
 The background model is only updated for those pixels that
 are currently background (i.e. $F(x_i) = 0$).
@@ -97,7 +92,7 @@ It is also updated (with probability $p = 1/T(x_i)$) a randomly chosen neighbori
 background model $B_k(y_i)$ at this neighboring pixel is replaced by its current pixel value $V(y_i)$.
 \paragraph{Update R}
 To change the decision treshold $R(x_i)$ is saved an array of recently observed pixel values in the background model $B(x_i)$, we also create an array $\mathbf{D}(x_i) = \{D_1(x_i ),...,D_N(x_i)\}$ of minimal decision distances. Whenever an update of $B_k(x_i)$ is carried out, the currently observed minimal distance:
-\[ d_{min}(x_i) = min_k dist(I(x_i), B_k(x_i)) \] is written to this array: $D_k(x_i) \leftarrow d_{min}(x_i)$. Thus, a history of minimal decision distances is created. The average of these values $\overline{d}_{min}(x_i) = \frac{1}{N} \sum_k D_k(x_i)$ is a measure of the background dynamics. Thanks to that
+\[ d_{min}(x_i) = min_k \{dist(I(x_i), B_k(x_i))\} \] is written to this array: $D_k(x_i) \leftarrow d_{min}(x_i)$. Thus, a history of minimal decision distances is created. The average of these values $\overline{d}_{min}(x_i) = \frac{1}{N} \sum_k D_k(x_i)$ is a measure of the background dynamics. Thanks to that
 the decision threshold can be dynamically adapted as follows:
 \begin{equation} \label{eq:R}
 R(x_i)=\begin{cases} R(x_i)\cdot(1-R{inc/dec}) &if\ R(x_i)> \overline{d}_{min}(x_i)\cdot R_{scale} \\ R(x_i)\cdot (1+R{inc/dec}) &else  \end{cases}
@@ -121,7 +116,7 @@ of pixel values against the gradient magnitude
 
 \section*{Experiments}
 
-In this section we first report the results obtained by varying the main model parameters. We also include the adopted settings that perform best in our scenario. Then, we show some real-case usages of the algorithm, comparing different environmental conditions that we found in 24/24h live videos. Next, are reported experiments made with 
+In this section we first report the results obtained by varying the main model parameters. We also include the adopted settings that perform best in our scenario. Then, we show some real-case usages of the algorithm, comparing different environmental conditions that we found in 24/24h live videos.
 
 \subsection{Hyperparameters}
 
@@ -129,7 +124,7 @@ In this section we first report the results obtained by varying the main model p
 $N$ represents how many matrices are kept in memory to model the background.
 Each of them stores the history of pixels values.
 The greater, the more complex backgrounds can be handled but at the cost of heavier
-computation. At $N=35$, experimental results show that performance saturates.
+computation.
 \begin{figure}[!t]
 \centering
 \subfloat[][N = 2]{
@@ -170,13 +165,11 @@ classified as background.
 \end{figure}
 
 \subsection*{T}
-The controller $T(x_i)$ associated to each pixel, is introduced with the idea to change dinamically the learning rate associated to each pixel based on its classification. It is slowly increased when the pixel is classified as background and slowly decreased when the pixel is classified as foreground. That leads to have a better foreground detection for multiple reasons. \newline
-In case of highly dynamic background (i.e. big $\overline{d}_{min}(x_i)$), the learning parameter $T(x_i)$ stays constant or only slightly changes. In this case of highly dynamic background, erroneously detected foreground will not remain for long, be-
-cause the probability to update $p = 1/T(x_i)$ does not reach
+The controller $T(x_i)$ associated to each pixel, is introduced with the idea to change dinamically the learning rate associated to each pixel based on its classification. It is slowly increased when the pixel is classified as background and slowly decreased when the pixel is classified as foreground. That leads to have a better foreground detection for multiple reasons: in case of highly dynamic background (i.e. big $\overline{d}_{min}(x_i)$), the learning parameter $T(x_i)$ stays constant or only slightly changes. In this case of highly dynamic background, erroneously detected foreground will not remain for long, because the probability to update $p = 1/T(x_i)$ does not reach
 zero too fast. \newline
 In the other ideal case of a fully static background, a classification as foreground is quite solid so $T(x_i)$ can be rapidly increased or decreased. \newline
 $T_{upper}$, $T_{lower}$: control respectively the lowest and the highest probability of updating a pixel and putting it in the background model $B$. \newline
-$T_{inc}$, $T_{dec}$: are fixed parameters and control the update of the controller T of each pixel, has been chosen to differentiate the two quantity since the pixels that are background are usually the largest part so choosing different parameters can lead to a better perfomance.\newline
+$T_{inc}$, $T_{dec}$: are fixed parameters and control the update of the controller T of each pixel.\newline
 Since one of the objective of the work is to have a robust classification of the foreground objects, we want to find the best values for the T parameters such that an object if classified as foreground stay as it for the longest period of time. 
 \begin{figure}[!t]
     \centering
@@ -192,18 +185,17 @@ Since one of the objective of the work is to have a robust classification of the
 
 
 \subsection*{R}
-Eq \ref{eq:R} is similar to the equation of a pure proportional controller.
+Eq (\ref{eq:R}) is similar to the equation of a pure proportional controller.
 In this case the $R(x,y)$ has to follow $d_{minavg}(x,y)R_{scale}$. So:
 \begin{itemize}
-    \item $R_{incdec}$: it can be seen as the propositional constant of the controller: setting too high lead to oscillation around the target and if set too high leads to divergence. Setting too low leads to slow convergence to the target values, making the algorithm too slow to adapt to dynamic backgrounds.
+    \item $R_{incdec}$: it can be seen as the propositional constant of the controller: setting too high can lead to oscillation around the target and even to divergence. Setting too low leads to slow convergence to the target values, making the algorithm too slow to adapt to dynamic backgrounds.
     \item $R_{scale}$: tells how much the algorithm is sensitive, in fact it is a direct
     control of the threshold. Setting too high it leads to really few false positives
     but also decreases true positives; setting too low, will increase false positives.
-    \item $R_{lower}$: sets a limit on how much $R$ can decrease its value. Setting too
-    low, it will lead to a lot of false positives in area that are foreground,
-    especially if the video is noise, so especially is zones that are clearly
-    background are changing their values of high amounts due to noise. Setting too
-    high it will reduce true positives. So the choice of it should be lead by the
+    \item $R_{lower}$: sets a limit on how much $R$ can decrease its value. Setting it too
+    low will lead to a lot of false positives,
+   especially in zones that are changing their values of high amounts due to noise. Setting too
+    high it will reduce true positives. So its value should be led by the
     video quality, more than the application domain.
 \end{itemize}
 \begin{figure}[!t]
@@ -224,7 +216,7 @@ anymore as foreground but also a part of the car is lost.}
 \end{figure}
 
 \subsection*{$\bm{\alpha}$}
-From eq \ref{eq:dist} we see that $\alpha$ tells how much to weight the image gradients
+From eq (\ref{eq:dist}) we see that $\alpha$ tells how much to weight the image gradients
 with respect to the image values in the distance computation.
 %\begin{figure}[!t]
 %    \centering
@@ -232,7 +224,7 @@ with respect to the image values in the distance computation.
 %    \caption{Gradients}
 %    \label{fig:gradients}
 %\end{figure}
-As we see, the image gradients give a good cue to distinguish the street from the cars
+The image gradients give a good cue to distinguish the street from the cars
 (image absolute values are not, since many cars have almost the same color of the
 street). So alpha should be set high, in order to take into consideration this fact.
 But notice that setting too high will lead to noisy masks, especially with noisy
@@ -258,16 +250,17 @@ videos that have small variations of the gradient from frame to frame.
 \end{figure}
 
 \subsection{Post-processing}
-To enhance the performance of the algorithm is applied on the final mask a median-filter using a square kernel. Since the value of the pixels can be 0 or 255 is equivalent to perform a majority voting among the kernel's pixels to decide the value of the middle one. That has shown to reduce the noise on the final mask and in the meanwhile generate more connected components. The size chosen for the kernel after different experiments is $5\times 5$.
+To enhance the performance of the algorithm is applied on the final mask a median-filter using a square kernel. Since the value of the pixels can be 0 or 255 is equivalent to perform a majority voting among the kernel's pixels to decide the value of the middle one. That has shown to reduce the noise on the final mask and in the meanwhile generate more connected components (Figure \ref{fig:median}). The size chosen for the kernel after different experiments is $5\times 5$.
 
-\begin{figure}
+\begin{figure} 
 \includegraphics[width=\linewidth]{Figures/median_blur.png}
 \caption{Comparison between output whitout post-processing and with median-blur post-processing}
+\label{fig:median}
 \end{figure}
 
 
 \subsection{Optimal Setting}
-The proposed method has a multitude of tunable parameters, their values have been chosen focusing the attention on having an algorithm robust to changing on weather condition and capable of identifying foreground object even if they stay steady for a period of time (i.e. cars stopped to a traffic light), still guaranteeing a real time behaviour. \newline
+The proposed method has a multitude of tunable parameters, their values have been chosen focusing the attention on having an algorithm robust to changing on weather condition and capable of identifying foreground object even if they stay steady for a period of time (e.g. cars stopped to a traffic light), still guaranteeing a real time behaviour. \newline
 Experimental results have shown that the optimal parameters are the following:
 \begin{itemize}
 \item $N = 30:$ The number of components of the
@@ -275,7 +268,7 @@ background model. Increasing the value of this parameter let the algorithm be mo
 \item $K = 3:$ The number of components that have to be closer than $R(x_i)$ in order to set the pixel to be background. We raise it to 3 (instead of 2) because we want to be stricter in the background classification, since cars are often segmented only near the borders and masks present holes in the central area, probably because the car color is matched with some previous background pixels.
 \item $R_{incdec} = 0.05:$ Proportial constant of the controller for the variable $R(x_i)$. The value 0.05 leads to pretty fast adaptation to the target value of $R(x_i)$ (in more or less 30 frames the target is reached). Considering that our target are long periods of time there is no reason to raise it.
 \item $R_{lower}=18:$ Lower bound of the decision threshold. It has been left to the value proposed in the original paper, since we found that raising it would lead to a significant decrease in true positive and lowering it would let too much noise in.
-\item $R_{scale}=2$ Scaling factor in the controller for the decision threshold. Setting it to 2 has shown to let the algorithm to recognize better the foreground object while introducing very low noise.
+\item $R_{scale}=2:$ Scaling factor in the controller for the decision threshold. Setting it to 2 has shown to let the algorithm recognize better the foreground object while introducing very low noise.
 \item $T_{dec} = 0.05:$ If $x_i$ is background, $T_{dec}$ is the rate at which $T(x_i)$ is decreased.
 \item $T_{inc} = 5:$ If $x_i$ is foreground, $T_{inc}$ is the rate at which $T(x_i)$ is increased. These parameter has shown to be very important to keep classified as foreground pixels associated to objects that have stopped their movement. Increasing it to 5 from the proposed value of 2 reduces faster the probability to put a steady foreground object in to one of the N components of the background model.
 \item $T_{lower}= 2:$ Lower bound of $T(x_i)$.
@@ -359,13 +352,11 @@ Since our goal is traffic monitoring 24/7, it is important to ensure that the al
     \caption{It is shown how the algorithm adapts to change of lightining and traffic conditions during a 1h and 30 min video sample.}
 \end{figure}
 
-\subsection{Algorithm Validation}
-
 \section*{Improvements}
 
 \subsection*{RGB vs Grey}
 We have experimented with a version of the algorithm working just on grey scale images and with one exploiting also color informations. The grey one is implementing exactly all the steps described in \ref{subsect:PBAS}. The RGB version runs the greyscale version for each of the three channels in parallel threads and then the final mask is computed as the logical-OR of the three masks obtained from the three channels.
-Experiments show that the RGB version has better cars detection capabilities, but obviuosly computationally heavier. We could not be able to try with a 4-core CPU, but in theory this can bring times down to the grayscale version, since the 3 channels can be computed quickly expoliting parallelism.
+Experiments show that the RGB version has slightly better cars detection capabilities, but obviuosly computationally heavier. We could not be able to try with a 4-core CPU, but in theory this can bring times down to the grayscale version, since the 3 channels can be computed quickly expoliting parallelism.
 
 \begin{figure}[!t]
     \centering
