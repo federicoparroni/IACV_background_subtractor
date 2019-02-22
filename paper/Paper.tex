@@ -86,7 +86,7 @@ This allows the current pixel value to be ”learned” into the background mode
 is carried out at all. Therefore, the parameter $T(x_i)$ defines the update rate. The higher $T(x_i)$ the less likely a pixel will be updated.
 It is also updated (with probability $p = 1/T(x_i)$) a randomly chosen neighboring pixel $y_i \in N(x_i)$. Thus, the background model $B_k(y_i)$ at this neighboring pixel is replaced by its current pixel value $V(y_i)$.
 \paragraph{Update R}
-To change the decision treshold $R(x_i)$ is saved an array of recently observed pixel values in the background model $B(x_i)$, we also create an array $\mathbf{D}(x_i) = \{D_1(x_i ),...,D_N(x_i)\}$ of minimal decision distances. Whenever an update of $B_k(x_i)$ is carried out, the currently observed minimal distance:
+To change the decision treshold $R(x_i)$ is saved an array of recently observed pixel values in the background model $B(x_i)$. We also create an array $\mathbf{D}(x_i) = \{D_1(x_i ),...,D_N(x_i)\}$ of minimal decision distances. Whenever an update of $B_k(x_i)$ is carried out, the currently observed minimal distance:
 \[ d_{min}(x_i) = min_k \{dist(I(x_i), B_k(x_i))\} \] is written to this array: $D_k(x_i) \leftarrow d_{min}(x_i)$. Thus, a history of minimal decision distances is created. The average of these values $\overline{d}_{min}(x_i) = \frac{1}{N} \sum_k D_k(x_i)$ is a measure of the background dynamics. Thanks to that, the decision threshold can be dynamically adapted as follows:
 \begin{equation} \label{eq:R}
 R(x_i)=\begin{cases} R(x_i)\cdot(1-R{inc/dec}) &if\ R(x_i)> \overline{d}_{min}(x_i)\cdot R_{scale} \\ R(x_i)\cdot (1+R{inc/dec}) &else  \end{cases}
@@ -95,7 +95,7 @@ Here, $R_{inc/dec}$ and $R_{scale}$ are fixed parameters. This can be seen as a 
 \paragraph{Update T}
 Independent of the foreground state $F(x_i)$, every object will be merged into the background depending on the learning parameter
 $T(x_i)$. To alleviate the problem, the idea is to introduce a
-(second) dynamic controller for $T(x_i)$ following the assumption that pixels are mostly wrongly classified as foreground in areas of high dynamic background the strength of the adjustment in the controller can be adapted using the dynamic estimator $\overline{d}_{min}(x_i)$. So can be defined:
+(second) dynamic controller for $T(x_i)$ following the assumption that pixels are mostly wrongly classified as foreground in areas of high dynamic background. The strength of the adjustment in the controller can be adapted using the dynamic estimator $\overline{d}_{min}(x_i)$. So can be defined:
 \begin{equation}
 T(x_i)=\begin{cases} T(x_i)+\frac{T_{inc}}{\overline{d}_{min}(x_i)} &if \ F(x_i)=1 \\ T(x_i)-\frac{T_{inc}}{\overline{d}_{min}(x_i)} &if \ F(x_i)=0 \end{cases}
 \end{equation}

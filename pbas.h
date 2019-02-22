@@ -4,7 +4,7 @@
 using namespace std;
 using namespace cv;
 
-class PBAS
+class PBASgray
 {
     private:
         int N;
@@ -73,9 +73,9 @@ class PBAS
         // shadows with paperino
         Mat shadows_corner(Mat* frame, Mat* mask);
     public:
-        PBAS();
-        PBAS(int N, int K, float R_incdec, int R_lower, int R_scale, float T_dec, int T_inc, int T_lower, int T_upper, int alpha);
-        ~PBAS();
+        PBASgray();
+        PBASgray(int N, int K, float R_incdec, int R_lower, int R_scale, float T_dec, int T_inc, int T_lower, int T_upper, int alpha);
+        ~PBASgray();
 
         Mat* process(const Mat* frame);
         void showCVMat(Mat matrix, bool normalize, string window_name);

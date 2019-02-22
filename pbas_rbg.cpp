@@ -86,7 +86,6 @@ class PBAS
         Mat gradient_magnitude(const Mat &frame);
 
     public:
-        PBAS();
         PBAS(int N, int K, float R_incdec, int R_lower, int R_scale, float T_dec, int T_inc, int T_lower, int T_upper, int alpha);
         ~PBAS();
         
@@ -207,9 +206,6 @@ Mat PBAS::process(const Mat &frame) {
     medianBlur(final_mask,final_mask,3);
 
     frame.copyTo(estimatedBg, 255-final_mask);
-
-    Mat toshow; T[0].convertTo(toshow, CV_8UC1);
-    imshow("T", toshow); moveWindow("T", 0, 550);
 
     return final_mask;
 }

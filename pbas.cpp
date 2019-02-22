@@ -14,7 +14,7 @@ using namespace std;
 using namespace cv;
 
 
-PBAS::PBAS() {
+PBASgray::PBASgray() {
     N = 30;
     K = 3;
     R_incdec = 0.05;
@@ -33,7 +33,7 @@ PBAS::PBAS() {
     init();
 }
 
-PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, float T_dec=0.05, int T_inc=1, int T_lower=2, int T_upper=200, int alpha = 10)
+PBASgray::PBASgray(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, float T_dec=0.05, int T_inc=1, int T_lower=2, int T_upper=200, int alpha = 10)
 {
     this->N = N;
     this->K = K;
@@ -49,7 +49,7 @@ PBAS::PBAS(int N, int K=2, float R_incdec=0.05, int R_lower=18, int R_scale=5, f
     init();
 }
 
-void PBAS::init() {
+void PBASgray::init() {
     //initialize random seed
     //srand (time(NULL));
 
@@ -64,7 +64,7 @@ void PBAS::init() {
     displacement_vec.push_back(make_pair(0, -1));
 }
 
-PBAS::~PBAS() {
+PBASgray::~PBASgray() {
     frame.release();
     frame_grad.release();
     median.release();
@@ -77,15 +77,15 @@ PBAS::~PBAS() {
     displacement_vec.clear();
 }
 
-float PBAS::distance(uint8_t a, uint8_t b) {
+float PBASgray::distance(uint8_t a, uint8_t b) {
     return abs(a-b);
 }
 
-float PBAS::distance(uint8_t p, uint8_t p_grad, uint8_t g, uint8_t g_grad) {
+float PBASgray::distance(uint8_t p, uint8_t p_grad, uint8_t g, uint8_t g_grad) {
     return (this->alpha/this->I_m) * abs((int)p_grad - (int)g_grad) + abs((int)p - (int)g); 
 }
 
-Mat PBAS::gradient_magnitude(Mat* frame){
+Mat PBASgray::gradient_magnitude(Mat* frame){
     Mat grad;
     int scale = 1;
     int delta = 0;
@@ -109,7 +109,7 @@ Mat PBAS::gradient_magnitude(Mat* frame){
     return grad;
 }
 
-void PBAS::init_Mat(Mat* matrix, float initial_value){
+void PBASgray::init_Mat(Mat* matrix, float initial_value){
     for(int i=0; i<h; i++){
         for(int j=0; j<w; j++){
             matrix->at<float>(i,j) = initial_value;
@@ -117,7 +117,7 @@ void PBAS::init_Mat(Mat* matrix, float initial_value){
     }
 }
 
-Mat PBAS::shadows_corner(Mat* frame, Mat* mask){
+Mat PBASgray::shadows_corner(Mat* frame, Mat* mask){
     Mat dst, dst_norm, dst_norm_scaled, masked_frame;
     dst = Mat::zeros(frame->size(), CV_32FC1);
     /// Detector parameters
@@ -140,7 +140,7 @@ Mat PBAS::shadows_corner(Mat* frame, Mat* mask){
 }
 
 //  Fast iteratation over Mat pixels: https://stackoverflow.com/a/46966298
-Mat* PBAS::process(const Mat* frame) {
+Mat* PBASgray::process(const Mat* frame) {
     //convert the frame in rgb and store it in the class variable this->frame
     cvtColor(*frame, this->frame, cv::COLOR_RGB2GRAY);
     //assign to the class variable the rgb frame
@@ -277,7 +277,7 @@ Mat* PBAS::process(const Mat* frame) {
     return &F;
 }
 
-void PBAS::showCVMat(Mat matrix, bool normalize, string window_name){
+void PBASgray::showCVMat(Mat matrix, bool normalize, string window_name){
     Mat matrix_p;
     double max_matrix;
     
@@ -307,7 +307,7 @@ void PBAS::showCVMat(Mat matrix, bool normalize, string window_name){
 }
 
 // project a HLS pixel into the euclidean h,s,L space
-Vec3d PBAS::tohsLprojection(Vec3b pixel) {
+Vec3d PBASgray::tohsLprojection(Vec3b pixel) {
     Mat rgb_container(1,1,CV_8UC3, &pixel);
     Mat hsl_container;
     cvtColor(rgb_container, hsl_container, COLOR_RGB2HLS);
@@ -323,13 +323,13 @@ Vec3d PBAS::tohsLprojection(Vec3b pixel) {
     return res;
 }
 
-double PBAS::hsLproduct(Vec3b p1, Vec3b p2) {
+double PBASgray::hsLproduct(Vec3b p1, Vec3b p2) {
     int dot1 = p1[0]*p2[0];
     int dot2 = p1[1]*p2[1];
     return max(0,dot1+dot2) + p1[2]*p2[2];
 }
 
-void PBAS::color_normalized_cross_correlation() {
+void PBASgray::color_normalized_cross_correlation() {
     int M = 7, N = 7; int MN = M*N;
     int halfM = (M-1)/2; int halfN = (N-1)/2;
     float cncc_threshold = 0.9;
@@ -372,7 +372,7 @@ void PBAS::color_normalized_cross_correlation() {
     return;
 }
 
-void PBAS::updateF(int x, int y, int i_ptr) {
+void PBASgray::updateF(int x, int y, int i_ptr) {
     //c = 0
     //while c < 3 or k >= self.K:
     int k = 0;       // number of lower-than-R distances for the channel 'c'
@@ -395,7 +395,7 @@ void PBAS::updateF(int x, int y, int i_ptr) {
     }
 }
 
-void PBAS::updateB(int x, int y, int i_ptr) {
+void PBASgray::updateB(int x, int y, int i_ptr) {
     int rand_numb, n, y_disp, x_disp;
     pair<int, int> disp;
     float update_p;
@@ -432,7 +432,7 @@ void PBAS::updateB(int x, int y, int i_ptr) {
     }
 }
 
-void PBAS::updateR(int x, int y, int n, int i_ptr) {
+void PBASgray::updateR(int x, int y, int n, int i_ptr) {
     // find dmin
     uint8_t I = i[i_ptr];
     uint8_t I_grad = i_grad[i_ptr];
@@ -464,7 +464,7 @@ void PBAS::updateR(int x, int y, int n, int i_ptr) {
     r[i_ptr] = max((float)R_lower, r[i_ptr]);
 }
 
-void PBAS::updateR_notoptimized(int x, int y, int n) {
+void PBASgray::updateR_notoptimized(int x, int y, int n) {
     // find dmin
     uint8_t I = frame.at<uint8_t>(x, y);
     uint8_t I_grad = frame_grad.at<uint8_t>(x,y);
@@ -496,7 +496,7 @@ void PBAS::updateR_notoptimized(int x, int y, int n) {
     R.at<float>(x,y) = max((float)R_lower, R.at<float>(x,y));
 }
 
-void PBAS::updateT(int x, int y, int i_ptr) {
+void PBASgray::updateT(int x, int y, int i_ptr) {
     float oldT = t[i_ptr];
     if(q[i_ptr] == 255)
         t[i_ptr] += T_inc / (d_minavg.at<float>(x,y) + 1);
@@ -507,7 +507,7 @@ void PBAS::updateT(int x, int y, int i_ptr) {
     t[i_ptr] = min((float)T_upper, t[i_ptr]);
 }
 
-void PBAS::updateMedian(int col){
+void PBASgray::updateMedian(int col){
     Vec3b med_pixel = this->med[col];
     Vec3b frame_pixel = this->i_rgb[col];
 
@@ -521,7 +521,7 @@ void PBAS::updateMedian(int col){
     }
 }
 
-int PBAS::is_shadow(int col){
+int PBASgray::is_shadow(int col){
     Vec3b frame_rgb_pixel = i_rgb[col];
     Vec3b median_rgb_pixel = med[col];
     Mat med_pixel(1,1,CV_8UC3, &median_rgb_pixel);
