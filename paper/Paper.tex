@@ -30,7 +30,7 @@ The model studied is the PBAS (Pixel-Based Adaptive Segmenter): it follows a non
 \section*{Introduction}
 Background subtraction and foreground detection are the basic tasks of many real application systems,
 for example, surveillance systems, autonomous vehicles, semantic image analysis. Background subtraction
-consists in classifying as foreground or background every single pixel belonging to a frame of a video sequence. At the end, the algorithm take as input a video and output a binary mask, where 1s are foreground pixels and 0s background pixels.
+consists in classifying as foreground or background every single pixel belonging to a frame of a video sequence. In synthesis, the algorithm take as input a video and output a binary mask, where 1s are foreground pixels and 0s background pixels.
 We restricted our domain to traffic monitoring, in particular this work should put the basis for an automated
 tool to identify cars and detect anomalies in highways and roads 24/24h (e.g. car accidents,
 traffic jam, wrong-direction driving) using a standard RGB stationary camera.
@@ -48,7 +48,7 @@ the basic algorithm in a FPGA device, which exploit and hardware implementation 
 
 \section*{Related work}
 Over the recent past, a multitude of algorithms and methods for background modeling have been developed.
-One of the most prominent and most widely used methods are those based on Gaussian Mixture Models (GMM) \cite{gmm}. Here, each pixels is modeled as a mixture of weighted Gaussian distributions. Pixels, which are detected as background are used to improve the Gaussian mixtures by an iterative update rule. A very important non-parametric method is the ViBe \cite{vibe}. Each pixel in the background model is defined by a history of the N most recent image values at each pixel and uses a random scheme to update them.
+One of the most prominent and most widely used methods are those based on Gaussian Mixture Models (GMM) \cite{gmm}: each pixel is modelled as a mixture of weighted Gaussian distributions. Pixels which are detected as background are used to improve the Gaussian mixtures by an iterative update rule. Another important non-parametric method is the ViBe \cite{vibe}. Each pixel in the background model is defined by a history of the N most recent image pixel values and it uses a random scheme to update them.
 Moreover, updated pixels can ”diffuse” their current pixel value into neighboring pixel using another random selection method. The preceding scheme is very similar to the approach followed by the PBAS \cite{pbas} algorithm.
 It can be categorized as a non-parametric method, since it uses a history of N image values as the background model, and uses a random update rule similar to the one used by the ViBe algorithm. However, in ViBe, the randomness parameters as well as the decision threshold are fixed for all pixels. In contrast, in the PBAS algorithm these values are not treated as parameters, but instead as adaptive state variables, which can dynamically change over time for each pixel separately.
 
@@ -77,27 +77,21 @@ the foreground segmentation mask is calculated as:
 \begin{equation} \label{eq:F}
 F(x_i) = \begin{cases} 1,& \#\{dist(I(x_i), B_k(x_i)) < R(x_i)\} < K \\0 &else\end{cases}
 \end{equation}
-$F = 1$ implies foreground. The decision involves two parameters: the distance threshold $R(x_i)$, which is defined for each pixel separately and which can change dynamically; and the minimum number $K$, which is a fixed global parameter.
+$F = 1$ implies foreground. The decision involves two parameters: the distance threshold $R(x_i)$, which is defined for each pixel separately and which can change dynamically, and the minimum number $K$, which is a fixed global parameter. The function $dist$ is a distance measure, as explained in equation (\ref{eq:dist}).
 \paragraph{Update B}
 The background model is only updated for those pixels that
 are currently background (i.e. $F(x_i) = 0$).
-Updating means that for a certain index $k \in \{1...N \}$ (chosen uniformly at random), the corresponding background model
-value $B_k(x_i)$ is replaced by the current pixel value $I(x_i)$.
-This allows the current pixel value to be ”learned” into
-the background model. This update, however, is only performed with probability $p = 1/T(x_i)$. Otherwise no update
-is carried out at all. Therefore, the parameter $T(x_i)$ defines
-the update rate. The higher $T(x_i)$ the less likely a pixel
-will be updated.
-It is also updated (with probability $p = 1/T(x_i)$) a randomly chosen neighboring pixel $y_i \in N(x_i)$. Thus, the
-background model $B_k(y_i)$ at this neighboring pixel is replaced by its current pixel value $V(y_i)$.
+Updating means that for a certain index $k \in \{1...N \}$ (chosen uniformly at random), the corresponding background model value $B_k(x_i)$ is replaced by the current pixel value $I(x_i)$.
+This allows the current pixel value to be ”learned” into the background model. This update, however, is only performed with probability $p = 1/T(x_i)$. Otherwise no update
+is carried out at all. Therefore, the parameter $T(x_i)$ defines the update rate. The higher $T(x_i)$ the less likely a pixel will be updated.
+It is also updated (with probability $p = 1/T(x_i)$) a randomly chosen neighboring pixel $y_i \in N(x_i)$. Thus, the background model $B_k(y_i)$ at this neighboring pixel is replaced by its current pixel value $V(y_i)$.
 \paragraph{Update R}
 To change the decision treshold $R(x_i)$ is saved an array of recently observed pixel values in the background model $B(x_i)$, we also create an array $\mathbf{D}(x_i) = \{D_1(x_i ),...,D_N(x_i)\}$ of minimal decision distances. Whenever an update of $B_k(x_i)$ is carried out, the currently observed minimal distance:
-\[ d_{min}(x_i) = min_k \{dist(I(x_i), B_k(x_i))\} \] is written to this array: $D_k(x_i) \leftarrow d_{min}(x_i)$. Thus, a history of minimal decision distances is created. The average of these values $\overline{d}_{min}(x_i) = \frac{1}{N} \sum_k D_k(x_i)$ is a measure of the background dynamics. Thanks to that
-the decision threshold can be dynamically adapted as follows:
+\[ d_{min}(x_i) = min_k \{dist(I(x_i), B_k(x_i))\} \] is written to this array: $D_k(x_i) \leftarrow d_{min}(x_i)$. Thus, a history of minimal decision distances is created. The average of these values $\overline{d}_{min}(x_i) = \frac{1}{N} \sum_k D_k(x_i)$ is a measure of the background dynamics. Thanks to that, the decision threshold can be dynamically adapted as follows:
 \begin{equation} \label{eq:R}
 R(x_i)=\begin{cases} R(x_i)\cdot(1-R{inc/dec}) &if\ R(x_i)> \overline{d}_{min}(x_i)\cdot R_{scale} \\ R(x_i)\cdot (1+R{inc/dec}) &else  \end{cases}
 \end{equation}
-Here, $R_{inc/dec}$, $R_{scale}$ are fixed parameters. This can be seen as a dynamic controller for the state variable $R(x_i)$.
+Here, $R_{inc/dec}$ and $R_{scale}$ are fixed parameters. This can be seen as a dynamic controller for the state variable $R(x_i)$.
 \paragraph{Update T}
 Independent of the foreground state $F(x_i)$, every object will be merged into the background depending on the learning parameter
 $T(x_i)$. To alleviate the problem, the idea is to introduce a
@@ -111,19 +105,18 @@ The quantity $ dist(I(x_i),B_k(x_i)) $ is computed as:
 \begin{equation} \label{eq:dist}
 \frac{\alpha}{\overline{I^m}}|I^m(x_i) - B_k^m(x_i)| + |I^v(x_i) - B_k^v(x_i)|
 \end{equation}
-where $m$ indicates the gradient magnitude and $v$ the pixel intensity value. $\overline{I_m}$ is the average gradient magnitude over the last observed frame. Thus, the fraction $\frac{\alpha}{\overline{I^m}}$ weighs the importance
-of pixel values against the gradient magnitude
+where $m$ indicates the gradient magnitude and $v$ the pixel intensity value. $\overline{I_m}$ is the average gradient magnitude over the last observed frame. Thus, the fraction $\frac{\alpha}{\overline{I^m}}$ weighs the importance of pixel values against the gradient magnitude.
 
 \section*{Experiments}
 
-In this section we first report the results obtained by varying the main model parameters. We also include the adopted settings that perform best in our scenario. Then, we show some real-case usages of the algorithm, comparing different environmental conditions that we found in 24/24h live videos.
+In this section, we first report the results obtained by varying the main model parameters. We also include the adopted settings that perform best in our scenario. Then, we show some real-case usages of the algorithm, comparing different environmental conditions that we found in 24/24h live videos.
 
 \subsection{Hyperparameters}
 
 \subsection*{N}
 $N$ represents how many matrices are kept in memory to model the background.
-Each of them stores the history of pixels values.
-The greater, the more complex backgrounds can be handled but at the cost of heavier
+Each of them stores the history of pixels values (so $N$ entries).
+The greater, the more complex backgrounds can be handled, but at the cost of heavier
 computation.
 \begin{figure}[!t]
 \centering
@@ -250,7 +243,7 @@ videos that have small variations of the gradient from frame to frame.
 \end{figure}
 
 \subsection{Post-processing}
-To enhance the performance of the algorithm is applied on the final mask a median-filter using a square kernel. Since the value of the pixels can be 0 or 255 is equivalent to perform a majority voting among the kernel's pixels to decide the value of the middle one. That has shown to reduce the noise on the final mask and in the meanwhile generate more connected components (Figure \ref{fig:median}). The size chosen for the kernel after different experiments is $5\times 5$.
+To refine the performance of the algorithm, a median-filter is applied to the final mask using a square kernel. Since the values of the pixels can be 0 or 255 this is equivalent to perform a majority voting among the kernel's pixels to decide the value of the middle one. That has shown to reduce the noise on the final mask and in the meanwhile generate more connected components (Figure \ref{fig:median}). The size chosen for the kernel after different experiments is $5\times 5$.
 
 \begin{figure} 
 \includegraphics[width=\linewidth]{Figures/median_blur.png}
@@ -273,11 +266,11 @@ background model. Increasing the value of this parameter let the algorithm be mo
 \item $T_{inc} = 5:$ If $x_i$ is foreground, $T_{inc}$ is the rate at which $T(x_i)$ is increased. These parameter has shown to be very important to keep classified as foreground pixels associated to objects that have stopped their movement. Increasing it to 5 from the proposed value of 2 reduces faster the probability to put a steady foreground object in to one of the N components of the background model.
 \item $T_{lower}= 2:$ Lower bound of $T(x_i)$.
 \item $T_{upper}= 200:$ Upper bound of $T(x_i)$.
-\item $\alpha = 20:$ Weight to give to image gradients. The proposed value is high because this shows to be a good cue for distinguishing car objects
+\item $\alpha = 20:$ Weight to give to image gradients. The proposed value is high because this shows to be a good cue for distinguishing car objects.
 \end{itemize} 
 
 \subsection{Long Period Experiments}
-Since our goal is traffic monitoring 24/7, it is important to ensure that the algorithm can adapt as time passes to different light conditions, environmental changes, and traffic intensity variations. In order to do this, we let the algorithm run on ninty minutes long videos recording smooth light transitions (from day to night and viceversa), rough changes of environmental conditions and variations of traffic intensity. Experiments show that the algorithm adapts without any problem in those scenarios. This makes us believe that also in a real 24/7 scenario there wouldn't be any problem of adaptation. However, this behaviour is more than expected: looking at how the PBAS works, we can notice that the state, that is the values of the variables, would change in the same way during the starting iterations as it would after one day of non-stop run. 
+Since our goal is traffic monitoring 24/7, it is important to ensure that the algorithm can adapt as time passes to different light conditions, environmental changes, and traffic intensity variations. In order to do this, we let the algorithm run on ninety minutes long videos recording smooth light transitions (from day to night and viceversa), rough changes of environmental conditions and variations of traffic intensity. Experiments show that the algorithm adapts without any problem in those scenarios. This makes us believe that also in a real 24/7 scenario there wouldn't be any adaptation problems. However, this behaviour is better than expected: looking at how the PBAS works, we can notice that the state (that is the values of the variables) would change in the same way during the starting iterations as it would after one day of non-stop run.
 
 \begin{figure}[!t]
     \centering
@@ -377,7 +370,7 @@ Experiments show that the RGB version has slightly better cars detection capabil
 \subsection*{Optical flow analysis}
 The algorithm is fully based on the variations of a pixel intensity over time. This cannot be enough in some situations to provide a correct segmentation, for example, we noticed that a traffic light is classified as a foreground element because it emits 3 different light colors that vary a lot from each other and very quickly from frame to frame (this problem has a more evident impact especially when using 3-channels videos). We can resort to optical flow to detect this kind of issues: in fact, optical flow provides a measure of the motion of pixels in consecutive frames, so in the previous case the flow of pixels in the area of the traffic light will not be present. So, we can discriminate pixels that have flow and pixels that have not, changing different parameters of the PBAS for these two categories.
 
-We built a model to determine which pixels had an "active" flow in the past, and in some sense these pixels represents road areas subject to traffic. We adopted the Farneback dense optical flow algorithm to get the flow of each pixel of the frame. Then, we checked which pixels had a flow magnitude over a certain threshold $W_{min}$ and we stored this information in a history of L previous samples. If the magnitude of the flow was greater then $W_{min}$ for L consecutive frames, than the pixel is classified as "flow-active". For all the "flow-active" pixels, we applied some ad-hoc adjustments for the PBAS parameters, in particular we decremented the update frequency T by a constant to penalyze the chances of those pixels to be inserted in the background model. Further changes can be done, however are out of the scope of this project.
+We built a model to determine which pixels had an "active" flow in the past, and in some sense these pixels represents road areas subject to traffic. We adopted the Farneback dense optical flow algorithm to get the flow of each pixel of the frame. Then, we checked which pixels had a flow magnitude over a certain threshold $W_{min}$ and we stored this information in a history of $L$ previous samples. If the magnitude of the flow was greater then $W_{min}$ for L consecutive frames, than the pixel is classified as "flow-active". For all the "flow-active" pixels, we applied some ad-hoc adjustments for the PBAS parameters, in particular we decremented the update frequency $T$ by a constant to penalyze the chances of those pixels to be inserted in the background model. Further changes can be done, however are out of the scope of this project.
 
 \begin{figure}[!t]
     \centering
