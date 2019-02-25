@@ -35,7 +35,7 @@ int main(int argc, char const *argv[]) {
         T_upper = stoi(argv[9]);
         alpha = stoi(argv[10]);
     }
-    VideoCapture cap1("dataset/Jackson_Hole_Wyoming/out0.mov");
+    VideoCapture cap1("videos/camera1.mp4");
     VideoCapture cap2("videos/railway_s.mp4");
     VideoCapture cap3("videos/nighttraffic.mp4");
 
