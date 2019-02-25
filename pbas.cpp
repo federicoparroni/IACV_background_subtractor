@@ -152,8 +152,8 @@ Mat* PBASgray::process(const Mat* frame) {
     this->frame_grad = gradient_magnitude(&this->frame);
     this->I_m = mean(this->frame_grad).val[0];
 
-    showCVMat(this->frame_grad, true, "grad");
-    moveWindow("grad", 900, 900);
+    //showCVMat(this->frame_grad, true, "grad");
+    //moveWindow("grad", 900, 900);
 
     // B, D, d_minavg initialization
     if (B.size() == 0) {
