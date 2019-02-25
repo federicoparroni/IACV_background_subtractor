@@ -93,18 +93,18 @@ int process(string & line){
 
 int main(int argc, char const *argv[]) {
     // init
-    string filename = "videos/camera1.mp4";
+    string filename = "videos/casino.mp4";
     if(argc >= 2) filename = argv[1];
     int N = 30;
     int K = 3;
     float R_incdec = 0.05;
     int R_lower = 18;
-    int R_scale = 5;
+    int R_scale = 2;
     float T_dec = 0.05;
-    int T_inc = 1;
+    int T_inc = 5;
     int T_lower = 2;
     int T_upper = 200;
-    int alpha = 10;
+    int alpha = 20;
     if(argc == 12) {
         N = stoi(argv[2]);
         K = stoi(argv[3]);
