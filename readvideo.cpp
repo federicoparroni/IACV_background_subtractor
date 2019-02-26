@@ -95,7 +95,7 @@ int main(int argc, char const *argv[]) {
     // init
     string filename = "videos/casino.mp4";
     if(argc >= 2) filename = argv[1];
-    int N = 30;
+    int N = 31;
     int K = 3;
     float R_incdec = 0.05;
     int R_lower = 18;
