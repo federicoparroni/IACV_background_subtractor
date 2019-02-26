@@ -98,7 +98,7 @@ int main(int argc, char const *argv[]) {
     int N = 30;
     int K = 3;
     float R_incdec = 0.05;
-    int R_lower = 18;
+    int R_lower = 19;
     int R_scale = 2;
     float T_dec = 0.051;
     int T_inc = 5;
