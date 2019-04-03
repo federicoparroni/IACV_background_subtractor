@@ -11,8 +11,9 @@ SAVE_VIDEO = True                   # set to false to save single frames
 FPS = 30
 VIDEO_CODEC = cv2.VideoWriter_fourcc(*'mp4v')
 VIDEO_CHUNKS_FRAMES = 30*(FPS*60)    # save video at chunks of frames (30 min @ 25 fps)
+MAX_CHUNKS_TO_SAVE = -1              # total number of chunks to save, -1 for no limit
 
-# url = "https://www.youtube.com/watch?v=1EiC9bvVGnk"
+# url = "https://www.youtube.com/watch?v=1EiC9bvVGnk" jackson hole wyoming
 # url = 'https://www.youtube.com/watch?v=ZTa4ap3i278'
 print('\nInsert youtube video url: ')
 url = input()
@@ -88,6 +89,7 @@ while True:
             out.write(frame)
 
         print_progress(current_frame, VIDEO_CHUNKS_FRAMES, video_chunk)
+        if video_chunk +1 == MAX_CHUNKS_TO_SAVE: break
     else:   # save single frames
         ret, frame = get_frame(cap)
         framename = '{}/frame{:016d}.jpg'.format(video_folder, frames_count)
