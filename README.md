@@ -1,5 +1,8 @@
 # IACV_background_subtractor
 
+## Description
+Fast C++ implementation of the PBAS Algorithm for Background Subtraction tasks in traffic environments.
+
 ## Compiling the source
 Run the following to compile the source code (requires OpenCV libraries):
 ```
